@@ -6,15 +6,31 @@ public struct CardExportSnapshotView: View {
     public let isDark: Bool
     
     // Universal 1:1 Square 4K Ultra Quality Master Dimensions (2400 × 2400 px @ 4x Retina)
-    // Pixel-perfect crisp clarity for LinkedIn, Instagram, and Twitter / X
     private let canvasSize: CGFloat = 600
     
-    private var cardWidth: CGFloat { CGFloat(min(320, max(281, note.width))) }
-    private var cardHeight: CGFloat { CGFloat(min(420, max(364, note.height))) }
-    private let headerHeight: CGFloat = 53
+    private var isNotesType: Bool { note.cardType == .notes }
+    
+    private var cardWidth: CGFloat {
+        if isNotesType {
+            return CGFloat(max(350, min(586, note.width > 281 ? note.width : 360)))
+        } else {
+            return CGFloat(max(300, min(586, note.width)))
+        }
+    }
+    
+    private var cardHeight: CGFloat {
+        if isNotesType {
+            return CGFloat(max(440, min(752, note.height > 364 ? note.height : 450)))
+        } else {
+            return CGFloat(max(440, min(752, note.height > 364 ? note.height : 450)))
+        }
+    }
+    
+    private let headerHeight: CGFloat = 54
     private var sheetHeight: CGFloat { max(100, cardHeight - headerHeight) }
     private let cornerRadius: CGFloat = 40
     private var contentWidth: CGFloat { max(200, cardWidth - 44) }
+    private var toolbarWidth: CGFloat { max(220, cardWidth - 28) }
     
     private var sheetBackgroundColor: Color {
         let opacity = AppSettings.shared.backgroundOpacity
@@ -27,6 +43,10 @@ public struct CardExportSnapshotView: View {
     
     private var completedTaskColor: Color {
         isDark ? Color(white: 0.45) : Color(red: 0.83, green: 0.83, blue: 0.83)
+    }
+    
+    private var buttonIconColor: Color {
+        isDark ? Color.white.opacity(0.92) : Color.black.opacity(0.75)
     }
     
     private var dynamicAccentColor: Color {
@@ -44,20 +64,31 @@ public struct CardExportSnapshotView: View {
             endPoint: .bottom
         )
     }
+    
+    private var timerHighlightGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color.orange.opacity(0.85), Color.orange.opacity(0.40)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+    
+    private var timeString: String {
+        let m = note.timeRemaining / 60
+        let s = note.timeRemaining % 60
+        return String(format: "%02d:%02d", m, s)
+    }
 
     public init(note: NoteCard, isDark: Bool) {
         self.note = note
         self.isDark = isDark
     }
 
-    private var canvasWidth: CGFloat { max(600, cardWidth + 80) }
-    private var canvasHeight: CGFloat { max(600, cardHeight + 80) }
-
     public var body: some View {
         ZStack {
             // 1. Full-Bleed Master Wallpaper Canvas (Crisp, Vibrant, Unblurred Master Background)
             HeaderImageView(imagePath: note.headerImagePath)
-                .frame(width: canvasWidth, height: canvasHeight)
+                .frame(width: canvasSize, height: canvasSize)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
                 .overlay(
@@ -72,36 +103,73 @@ public struct CardExportSnapshotView: View {
                     .frame(width: cardWidth, height: cardHeight)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
-                // Title Capsule (Inside Crisp Image Section)
-                HStack {
-                    Spacer()
-                    HStack(spacing: 6) {
-                        if note.cardType == .notes {
-                            Image(systemName: "note.text")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(taskTextColor.opacity(0.65))
+                // Top Header Title / Tabs Bar (Inside Header Region)
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    if isNotesType {
+                        // Multi-Tab bar for Notes
+                        HStack(spacing: 6) {
+                            let pages = note.pages.isEmpty ? [NotePage(title: note.title.isEmpty ? "Quick Note" : note.title, content: note.noteContent)] : note.pages
+                            ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
+                                let isActive = (note.activePageIndex == index)
+                                HStack(spacing: 4) {
+                                    Text(page.title.isEmpty ? "Note \(index + 1)" : page.title)
+                                        .font(.system(size: 12.5, weight: isActive ? .semibold : .medium, design: .default))
+                                        .foregroundStyle(isActive ? taskTextColor : taskTextColor.opacity(0.65))
+                                        .lineLimit(1)
+                                }
+                                .padding(.horizontal, isActive ? 12 : 10)
+                                .frame(height: 34)
+                                .background(isActive ? sheetBackgroundColor : sheetBackgroundColor.opacity(0.40), in: Capsule())
+                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                .shadow(color: Color.black.opacity(isActive ? (isDark ? 0.04 : 0.02) : 0), radius: 3, x: 0, y: 1)
+                            }
+                            
+                            // + Tab Button
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(buttonIconColor)
+                                .frame(width: 34, height: 34)
+                                .background(sheetBackgroundColor, in: Circle())
+                                .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
                         }
-                        let currentTitle: String = (note.cardType == .notes && note.pages.indices.contains(note.activePageIndex))
-                            ? note.pages[note.activePageIndex].title
-                            : note.title
-                        Text(currentTitle)
-                            .font(.system(size: 13, weight: .semibold, design: .default))
-                            .foregroundStyle(taskTextColor)
+                    } else {
+                        // Title Capsule & Timer Pill for Tasks
+                        HStack(spacing: 8) {
+                            Text(note.title)
+                                .font(.system(size: 13, weight: .semibold, design: .default))
+                                .foregroundStyle(taskTextColor)
+                                .padding(.horizontal, 14)
+                                .frame(height: 34)
+                                .background(sheetBackgroundColor, in: Capsule())
+                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                            
+                            // Pomodoro Timer Pill
+                            HStack(spacing: 5) {
+                                Image(systemName: note.isTimerRunning ? "pause.fill" : "play.fill")
+                                    .font(.system(size: 9.5, weight: .bold))
+                                    .foregroundStyle(note.isTimerRunning ? Color.orange : buttonIconColor)
+                                
+                                Text(timeString)
+                                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundStyle(note.isTimerRunning ? (isDark ? Color.white : Color.orange) : taskTextColor.opacity(0.88))
+                            }
+                            .padding(.horizontal, 11)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(note.isTimerRunning ? timerHighlightGradient : specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .frame(height: 36)
-                    .background(sheetBackgroundColor, in: Capsule())
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-                    )
-                    .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
-                    Spacer()
+                    Spacer(minLength: 0)
                 }
                 .frame(width: cardWidth, height: headerHeight)
+                .zIndex(10)
 
-                // Main Content Area (Only the background below the text is blurred)
-                ZStack(alignment: .topLeading) {
+                // Main Frosted Glass Content Sheet
+                ZStack(alignment: .top) {
                     // Frosted Blurred Wallpaper Underlay directly below the text
                     HeaderImageView(imagePath: note.headerImagePath)
                         .frame(width: cardWidth, height: cardHeight)
@@ -116,56 +184,114 @@ public struct CardExportSnapshotView: View {
                     // Frosted Glass Tint
                     sheetBackgroundColor
 
-                    if note.cardType == .notes {
-                        // Freeform Note Content with rich markdown formatting
-                        let currentContent: String = note.pages.indices.contains(note.activePageIndex)
-                            ? note.pages[note.activePageIndex].content
-                            : note.noteContent
-                        VStack(alignment: .leading, spacing: 0) {
-                            Spacer(minLength: 22)
-                            
-                            if let attr = try? AttributedString(markdown: currentContent, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
-                                Text(attr)
-                                    .font(.system(size: 15, weight: .regular, design: .default))
-                                    .lineSpacing(4)
-                                    .foregroundStyle(taskTextColor)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    // Complete Sheet Content: Top Toolbar + Body + Bottom Toolbar
+                    VStack(spacing: 0) {
+                        // 1. Top Toolbar with Buttons Visible
+                        HStack {
+                            if isNotesType {
+                                // Formatting Capsule (Bold, Italic, Bullets)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "bold")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(buttonIconColor)
+                                    Image(systemName: "italic")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(buttonIconColor)
+                                    Image(systemName: "list.bullet")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(buttonIconColor)
+                                }
+                                .padding(.horizontal, 13)
+                                .frame(height: 36)
+                                .background(sheetBackgroundColor, in: Capsule())
+                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
                             } else {
-                                Text(currentContent.isEmpty ? "No notes recorded." : currentContent)
-                                    .font(.system(size: 15, weight: .regular, design: .default))
-                                    .lineSpacing(4)
-                                    .foregroundStyle(taskTextColor)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                // Add Button (+ Circle)
+                                Image(systemName: "plus")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(buttonIconColor)
+                                    .frame(width: 36, height: 36)
+                                    .background(sheetBackgroundColor, in: Circle())
+                                    .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                    .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
                             }
-                            
-                            Spacer(minLength: 22)
+
+                            Spacer()
+
+                            // Right Action Capsule: Download, Pin, Cycle, Photo, Trash
+                            HStack(spacing: 10) {
+                                Image(systemName: "arrow.down.to.line")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(buttonIconColor)
+                                Image(systemName: note.isPinned ? "pin.fill" : "pin")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(note.isPinned ? Color.orange : buttonIconColor)
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(buttonIconColor)
+                                Image(systemName: "photo.on.rectangle")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(buttonIconColor)
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundStyle(buttonIconColor)
+                            }
+                            .padding(.horizontal, 11)
+                            .frame(height: 36)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
                         }
-                        .padding(.horizontal, 24)
-                    } else {
-                        // Task Items List (Sharp, High-Contrast Foreground Text with Equal Top & Bottom Padding)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Spacer(minLength: 22)
-                            
-                            VStack(alignment: .leading, spacing: 14) {
+                        .frame(width: toolbarWidth)
+                        .padding(.top, 14)
+                        .padding(.bottom, 6)
+
+                        // 2. Body Content
+                        if isNotesType {
+                            let currentContent: String = note.pages.indices.contains(note.activePageIndex)
+                                ? note.pages[note.activePageIndex].content
+                                : note.noteContent
+                            VStack(alignment: .leading, spacing: 0) {
+                                if let attr = try? AttributedString(markdown: currentContent, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+                                    Text(attr)
+                                        .font(.system(size: 13.5, weight: .regular, design: .default))
+                                        .lineSpacing(3.5)
+                                        .foregroundStyle(taskTextColor)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                                } else {
+                                    Text(currentContent.isEmpty ? "No notes recorded." : currentContent)
+                                        .font(.system(size: 13.5, weight: .regular, design: .default))
+                                        .lineSpacing(3.5)
+                                        .foregroundStyle(taskTextColor)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 6)
+                            .frame(maxHeight: .infinity)
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
                                 ForEach(Array(note.items.enumerated()), id: \.element.id) { index, item in
                                     HStack(alignment: .top, spacing: 8) {
                                         Text("\(index + 1).")
-                                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                            .font(.system(size: 13.5, weight: .semibold, design: .rounded))
                                             .monospacedDigit()
                                             .foregroundStyle(
                                                 item.isCompleted 
                                                     ? completedTaskColor.opacity(isDark ? 0.75 : 0.65)
                                                     : (isDark ? Color.white.opacity(0.45) : Color.black.opacity(0.40))
                                             )
-                                            .frame(minWidth: 18, alignment: .leading)
+                                            .frame(minWidth: 16, alignment: .leading)
                                             .padding(.top, 1)
 
                                         Text(item.text)
-                                            .font(.system(size: 15, weight: .regular, design: .default))
-                                            .tracking(-0.4)
-                                            .lineSpacing(2.5)
+                                            .font(.system(size: 13.5, weight: .regular, design: .default))
+                                            .tracking(-0.3)
+                                            .lineSpacing(2)
                                             .foregroundStyle(item.isCompleted ? completedTaskColor : taskTextColor)
                                             .strikethrough(item.isCompleted, color: completedTaskColor.opacity(isDark ? 0.75 : 0.65))
                                             .multilineTextAlignment(.leading)
@@ -174,11 +300,39 @@ public struct CardExportSnapshotView: View {
                                     }
                                     .frame(width: contentWidth, alignment: .leading)
                                 }
+                                Spacer(minLength: 0)
                             }
-                            
-                            Spacer(minLength: 22)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 6)
+                            .frame(maxHeight: .infinity)
                         }
-                        .padding(.horizontal, 22)
+
+                        // 3. Bottom Toolbar
+                        HStack {
+                            if isNotesType {
+                                let plainText = (note.pages.indices.contains(note.activePageIndex) ? note.pages[note.activePageIndex].content : note.noteContent)
+                                    .replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
+                                let words = plainText.split { $0.isWhitespace || $0.isNewline }.count
+                                let chars = plainText.count
+                                Text("\(words) words · \(chars) chars")
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(taskTextColor.opacity(0.50))
+                                    .padding(.leading, 18)
+                            }
+                            Spacer()
+                            Text("Add Group")
+                                .font(.system(size: 12, weight: .medium, design: .default))
+                                .foregroundStyle(buttonIconColor)
+                                .padding(.horizontal, 13)
+                                .frame(height: 32)
+                                .background(sheetBackgroundColor, in: Capsule())
+                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+                                .padding(.trailing, 16)
+                        }
+                        .frame(width: cardWidth)
+                        .padding(.bottom, 16)
+                        .padding(.top, 4)
                     }
                 }
                 .frame(width: cardWidth, height: sheetHeight, alignment: .center)

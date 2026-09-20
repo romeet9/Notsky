@@ -57,23 +57,35 @@
 <div align="center">
   <table>
     <tr>
-      <td width="50%" align="center">
-        <b>Design Iterations Task Card</b><br/>
-        <img src="docs/screenshots/Notsky-Design-Iterations.png" width="100%" />
+      <td width="50%" align="center" valign="top">
+        <br/>
+        <b>Design Iterations Task Card</b>
+        <br/><br/>
+        <img src="docs/screenshots/Notsky-Design-Iterations.png" width="100%" alt="Design Iterations Task Card" />
+        <br/><br/>
       </td>
-      <td width="50%" align="center">
-        <b>Launch Checklist & Pomodoro</b><br/>
-        <img src="docs/screenshots/Notsky-Launch-Checklist.png" width="100%" />
+      <td width="50%" align="center" valign="top">
+        <br/>
+        <b>Launch Checklist &amp; Pomodoro</b>
+        <br/><br/>
+        <img src="docs/screenshots/Notsky-Launch-Checklist.png" width="100%" alt="Launch Checklist &amp; Pomodoro" />
+        <br/><br/>
       </td>
     </tr>
     <tr>
-      <td width="50%" align="center">
-        <b>Strategy & Multi-Tab Notes</b><br/>
-        <img src="docs/screenshots/Notsky-Strategy.png" width="100%" />
+      <td width="50%" align="center" valign="top">
+        <br/>
+        <b>Strategy &amp; Multi-Tab Notes</b>
+        <br/><br/>
+        <img src="docs/screenshots/Notsky-Strategy.png" width="100%" alt="Strategy &amp; Multi-Tab Notes" />
+        <br/><br/>
       </td>
-      <td width="50%" align="center">
-        <b>Daily Focus Snapshot</b><br/>
-        <img src="docs/screenshots/Notsky-Daily-Focus.png" width="100%" />
+      <td width="50%" align="center" valign="top">
+        <br/>
+        <b>Daily Focus Snapshot</b>
+        <br/><br/>
+        <img src="docs/screenshots/Notsky-Daily-Focus.png" width="100%" alt="Daily Focus Snapshot" />
+        <br/><br/>
       </td>
     </tr>
   </table>
