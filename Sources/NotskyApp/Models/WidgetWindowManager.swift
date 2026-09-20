@@ -73,11 +73,14 @@ public final class WidgetPanel: NSPanel {
         case .leftMouseUp:
             if self.isDraggingThisPanel {
                 self.isDraggingThisPanel = false
+                let wasMoved = self.didDragMoved
                 if let noteId = self.noteId {
-                    WidgetWindowManager.shared.endDrag(noteId: noteId, panel: self, didMove: self.didDragMoved)
+                    WidgetWindowManager.shared.endDrag(noteId: noteId, panel: self, didMove: wasMoved)
                 }
                 self.didDragMoved = false
-                return
+                if wasMoved {
+                    return
+                }
             }
             super.sendEvent(event)
             

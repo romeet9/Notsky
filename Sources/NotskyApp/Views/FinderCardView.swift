@@ -152,13 +152,13 @@ public struct FinderCardView: View {
             .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
             .shadow(color: Color.black.opacity(0.35), radius: 6, y: 2)
             
-            // Status Capsule
+            // Status Capsule (Live AI Ping/Ready Indicator)
             HStack(spacing: 5) {
                 Circle()
-                    .fill(Color.red)
-                    .frame(width: 6, height: 6)
+                    .fill(isSearching ? Color.orange : Color.green)
+                    .frame(width: 7, height: 7)
                 
-                Text("ready")
+                Text(isSearching ? "thinking" : "ready")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(isDark ? .white.opacity(0.9) : .black.opacity(0.8))
             }
@@ -204,7 +204,7 @@ public struct FinderCardView: View {
                 }) {
                     Image(systemName: "key.fill")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AIFinderService.shared.apiKey.isEmpty ? .red : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
+                        .foregroundColor(AIFinderService.shared.apiKey.isEmpty ? (isDark ? .white.opacity(0.5) : .black.opacity(0.4)) : Color.green)
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showSettingsPopover) {
@@ -237,17 +237,20 @@ public struct FinderCardView: View {
                 }
                 .help("AI Settings")
                 
-                // 2. Pin Button
+                // 2. Pin Button (Pin on Top / Floating)
                 Button(action: {
                     SensoryFeedback.buttonClicked()
-                    note.isPinned.toggle()
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        note.isPinned.toggle()
+                        WidgetWindowManager.shared.setPinned(note.isPinned, for: note.id)
+                    }
                 }) {
                     Image(systemName: note.isPinned ? "pin.fill" : "pin")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(note.isPinned ? .red : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
+                        .foregroundColor(note.isPinned ? Color.orange : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
                 }
                 .buttonStyle(.plain)
-                .help("Pin Widget")
+                .help(note.isPinned ? "Unpin (Desktop Canvas)" : "Pin on Top (Floating)")
                 
                 // 3. Cycle Wallpaper Button
                 Button(action: {
