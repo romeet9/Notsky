@@ -22,7 +22,7 @@
 
 <br />
 
-<img src="docs/screenshots/Notsky-macOS-Workspace.png" alt="Notsky macOS Spatial Desktop Workspace" width="100%" style="border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.45);" />
+<img src="docs/screenshots/Notsky-macOS-Workspace-Retina.png" alt="Notsky macOS Spatial Desktop Workspace" width="100%" style="border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.45);" />
 
 </div>
 
