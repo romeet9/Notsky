@@ -317,21 +317,34 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func spawnNewWidget(near origin: CGPoint? = nil) {
         let newId = UUID()
-        let count = windowControllers.count
-        let visibleFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let topY = visibleFrame.maxY - GridSnapManager.shared.edgeMarginY
+        let targetWidth: Double = 281
+        let targetHeight: Double = 364
         
-        let spawnOrigin: CGPoint
+        let slot: (col: Int, row: Int)
         if let origin = origin {
             let nextX = origin.x + GridSnapManager.shared.cellWidth
-            let targetPoint = CGPoint(x: nextX + (GridSnapManager.shared.cardWidth / 2), y: origin.y + (GridSnapManager.shared.cardHeight / 2))
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: targetPoint)
+            let candidateSlot = GridSnapManager.shared.gridSlot(for: CGPoint(x: nextX + 140, y: origin.y + 182))
+            // Verify if candidateSlot is free, else find next available
+            let cSpan = GridSnapManager.shared.colSpan(for: targetWidth)
+            let rSpan = GridSnapManager.shared.rowSpan(for: targetHeight)
+            var isOccupied = false
+            for n in store.notes {
+                let nCol = n.gridCol
+                let nRow = n.gridRow
+                let nCSpan = GridSnapManager.shared.colSpan(for: n.width)
+                let nRSpan = GridSnapManager.shared.rowSpan(for: n.height)
+                if !(candidateSlot.col + cSpan <= nCol || candidateSlot.col >= nCol + nCSpan ||
+                     candidateSlot.row + rSpan <= nRow || candidateSlot.row >= nRow + nRSpan) {
+                    isOccupied = true
+                    break
+                }
+            }
+            slot = isOccupied ? GridSnapManager.shared.findNextAvailableSlot(cardWidth: targetWidth, cardHeight: targetHeight, existingNotes: store.notes) : candidateSlot
         } else {
-            let initialX = visibleFrame.minX + GridSnapManager.shared.edgeMarginX + (CGFloat(count) * GridSnapManager.shared.cellWidth)
-            let initialY = topY - GridSnapManager.shared.cardHeight
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: CGPoint(x: initialX + 140, y: initialY + 201))
+            slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: targetWidth, cardHeight: targetHeight, existingNotes: store.notes)
         }
         
+        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(targetHeight))
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         let newNote = NoteCard(
             id: newId,
@@ -339,10 +352,12 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             title: "New Group",
             headerImagePath: nextWallpaper,
             items: [],
+            gridCol: slot.col,
+            gridRow: slot.row,
             positionX: spawnOrigin.x,
             positionY: spawnOrigin.y,
-            width: 281,
-            height: 364
+            width: targetWidth,
+            height: targetHeight
         )
         
         store.notes.append(newNote)
@@ -351,23 +366,13 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil) {
         let newId = UUID()
-        let count = windowControllers.count
-        let visibleFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let topY = visibleFrame.maxY - GridSnapManager.shared.edgeMarginY
+        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
+        let targetHeight: Double = 364.0
         
-        let spawnOrigin: CGPoint
-        if let origin = origin {
-            let nextX = origin.x + GridSnapManager.shared.cellWidth
-            let targetPoint = CGPoint(x: nextX + (GridSnapManager.shared.cardWidth / 2), y: origin.y + (GridSnapManager.shared.cardHeight / 2))
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: targetPoint)
-        } else {
-            let initialX = visibleFrame.minX + GridSnapManager.shared.edgeMarginX + (CGFloat(count) * GridSnapManager.shared.cellWidth)
-            let initialY = topY - GridSnapManager.shared.cardHeight
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: CGPoint(x: initialX + 140, y: initialY + 201))
-        }
+        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: doubleCardWidth, cardHeight: targetHeight, existingNotes: store.notes)
+        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(targetHeight))
         
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
-        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
         let newNote = NoteCard(
             id: newId,
             cardType: .notes,
@@ -377,10 +382,12 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             activePageIndex: 0,
             headerImagePath: nextWallpaper,
             items: [],
+            gridCol: slot.col,
+            gridRow: slot.row,
             positionX: spawnOrigin.x,
             positionY: spawnOrigin.y,
             width: doubleCardWidth,
-            height: 364
+            height: targetHeight
         )
         
         store.notes.append(newNote)
@@ -389,23 +396,11 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func spawnNewFinderWidget(near origin: CGPoint? = nil) {
         let newId = UUID()
-        let count = windowControllers.count
-        let visibleFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let topY = visibleFrame.maxY - GridSnapManager.shared.edgeMarginY
-        
         let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
         let doubleCardHeight: Double = 364.0 * 2.0 + 24.0
         
-        let spawnOrigin: CGPoint
-        if let origin = origin {
-            let nextX = origin.x + GridSnapManager.shared.cellWidth
-            let targetPoint = CGPoint(x: nextX + (CGFloat(doubleCardWidth) / 2), y: origin.y + (CGFloat(doubleCardHeight) / 2))
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: targetPoint, cardWidth: CGFloat(doubleCardWidth), cardHeight: CGFloat(doubleCardHeight))
-        } else {
-            let initialX = visibleFrame.minX + GridSnapManager.shared.edgeMarginX + (CGFloat(count) * GridSnapManager.shared.cellWidth)
-            let initialY = topY - CGFloat(doubleCardHeight)
-            spawnOrigin = GridSnapManager.shared.snapOrigin(for: CGPoint(x: initialX + (CGFloat(doubleCardWidth) / 2), y: initialY + (CGFloat(doubleCardHeight) / 2)), cardWidth: CGFloat(doubleCardWidth), cardHeight: CGFloat(doubleCardHeight))
-        }
+        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: doubleCardWidth, cardHeight: doubleCardHeight, existingNotes: store.notes)
+        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(doubleCardHeight))
         
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         let newNote = NoteCard(
@@ -416,6 +411,8 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             headerImagePath: nextWallpaper,
             items: [],
             chatMessages: [],
+            gridCol: slot.col,
+            gridRow: slot.row,
             positionX: spawnOrigin.x,
             positionY: spawnOrigin.y,
             width: doubleCardWidth,
@@ -453,5 +450,148 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
                 panel.setFrameOrigin(otherPanelOrigin)
             }
         }
+    }
+    
+    public func clearWorkspace() {
+        for (_, controller) in windowControllers {
+            controller.window?.close()
+        }
+        windowControllers.removeAll()
+        store.notes.removeAll()
+    }
+    
+    public func fillDemoData() {
+        clearWorkspace()
+        
+        let packs = WallpaperPackManager.builtInPacks()
+        let items = packs.first?.items ?? []
+        
+        let w0 = items.indices.contains(0) ? items[0].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let w1 = items.indices.contains(4) ? items[4].path : (items.indices.contains(1) ? items[1].path : WallpaperPackManager.shared.nextWallpaperPath())
+        let w2 = items.indices.contains(2) ? items[2].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let w3 = items.indices.contains(1) ? items[1].path : (items.indices.contains(3) ? items[3].path : WallpaperPackManager.shared.nextWallpaperPath())
+        
+        let card1Id = UUID()
+        let card1 = NoteCard(
+            id: card1Id,
+            cardType: .tasks,
+            title: "Design Iterations",
+            headerImagePath: w0,
+            items: [
+                NoteItem(text: "Explore liquid-glass refraction shaders", isCompleted: true),
+                NoteItem(text: "Refine superellipse continuous corners (40pt)", isCompleted: true),
+                NoteItem(text: "Tune dynamic wallpaper luminance tinting", isCompleted: true),
+                NoteItem(text: "Test multi-monitor cursor magnetic snapping", isCompleted: false),
+                NoteItem(text: "Polish over-dock slide shelf animations", isCompleted: false)
+            ],
+            gridCol: 0,
+            gridRow: 0,
+            width: 281,
+            height: 364,
+            timerDuration: 25 * 60,
+            timeRemaining: 25 * 60,
+            isTimerRunning: false
+        )
+        
+        let card2Id = UUID()
+        let card2 = NoteCard(
+            id: card2Id,
+            cardType: .tasks,
+            title: "Launch Checklist",
+            headerImagePath: w1,
+            items: [
+                NoteItem(text: "Finalize macOS AppIcon & Dock integration", isCompleted: true),
+                NoteItem(text: "Verify template menu bar icon optical height", isCompleted: true),
+                NoteItem(text: "Test slide-up drawer over sticky dock", isCompleted: true),
+                NoteItem(text: "Render 4K UI widget showcase mockups", isCompleted: true),
+                NoteItem(text: "Ship v1.0.0 release build to GitHub", isCompleted: false)
+            ],
+            gridCol: 1,
+            gridRow: 0,
+            width: 281,
+            height: 364,
+            timerDuration: 25 * 60,
+            timeRemaining: 18 * 60 + 42,
+            isTimerRunning: true
+        )
+        
+        let strategyContent = """
+**Core Architecture Principles**
+
+• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
+
+• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
+
+• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
+"""
+        let ideasContent = """
+**Product Ideas & Brainstorming**
+
+• **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
+• **Trackpad Gestures**: Swipe smoothly between note tabs.
+• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
+"""
+        let snippetsContent = """
+**Developer & Design Snippets**
+
+• `git commit -m "feat: multi-tab quick notes"`
+• `swift build -c release`
+• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
+"""
+        
+        let card3Id = UUID()
+        let card3 = NoteCard(
+            id: card3Id,
+            cardType: .notes,
+            title: "Strategy & Notes",
+            noteContent: strategyContent,
+            pages: [
+                NotePage(title: "Strategy", content: strategyContent),
+                NotePage(title: "Ideas", content: ideasContent),
+                NotePage(title: "Snippets", content: snippetsContent)
+            ],
+            activePageIndex: 0,
+            headerImagePath: w2,
+            items: [],
+            gridCol: 0,
+            gridRow: 1,
+            width: 586,
+            height: 364
+        )
+        
+        let card4Id = UUID()
+        let sampleFiles = [
+            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "/Users/romeet/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
+            FinderFileItem(name: "Design_System_Tokens.pdf", path: "/Users/romeet/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
+            FinderFileItem(name: "Notsky_Release_Notes.md", path: "/Users/romeet/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
+        ]
+        
+        let card4 = NoteCard(
+            id: card4Id,
+            cardType: .finder,
+            title: "notskyai",
+            noteContent: "",
+            headerImagePath: w3,
+            items: [],
+            chatMessages: [
+                ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
+                ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
+            ],
+            gridCol: 2,
+            gridRow: 0,
+            width: 586,
+            height: 752
+        )
+        
+        store.notes = [card1, card2, card3, card4]
+        
+        for (index, note) in store.notes.enumerated() {
+            let cardH = CGFloat(note.height)
+            let origin = GridSnapManager.shared.cardOrigin(forCol: note.gridCol, row: note.gridRow, cardHeight: cardH)
+            store.notes[index].positionX = origin.x
+            store.notes[index].positionY = origin.y
+            openWidgetWindow(for: note.id, at: origin)
+        }
+        SensoryFeedback.buttonClicked()
     }
 }

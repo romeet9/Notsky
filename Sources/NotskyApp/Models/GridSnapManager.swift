@@ -132,10 +132,49 @@ public final class GridSnapManager {
         return CGPoint(x: panelX, y: panelY)
     }
     
-    /// Calculate snapped slot with rigid edge clamping completely within screen bounds
-    public func snapOrigin(for cursor: CGPoint, cardWidth targetWidth: CGFloat = 281, cardHeight targetHeight: CGFloat = 364) -> CGPoint {
-        let (col, row) = gridSlot(for: cursor, cardWidth: targetWidth, cardHeight: targetHeight)
-        return cardOrigin(forCol: col, row: row, cardHeight: targetHeight)
+    // MARK: - Find Next Open Slot (Zero Overlap for New Cards)
+    public func findNextAvailableSlot(cardWidth targetWidth: Double, cardHeight targetHeight: Double, existingNotes: [NoteCard]) -> (col: Int, row: Int) {
+        let cSpan = colSpan(for: targetWidth)
+        let rSpan = rowSpan(for: targetHeight)
+        
+        let maxCols = 16
+        let maxRows = 16
+        var occupied = [[Bool]](repeating: [Bool](repeating: false, count: maxRows), count: maxCols)
+        
+        for note in existingNotes {
+            let noteCSpan = colSpan(for: note.width)
+            let noteRSpan = rowSpan(for: note.height)
+            let col = note.gridCol
+            let row = note.gridRow
+            for c in col..<min(maxCols, col + noteCSpan) {
+                for r in row..<min(maxRows, row + noteRSpan) {
+                    occupied[c][r] = true
+                }
+            }
+        }
+        
+        for r in 0..<maxRows {
+            for c in 0..<maxCols {
+                var canFit = true
+                if c + cSpan > maxCols || r + rSpan > maxRows {
+                    canFit = false
+                } else {
+                    for testC in c..<(c + cSpan) {
+                        for testR in r..<(r + rSpan) {
+                            if occupied[testC][testR] {
+                                canFit = false
+                                break
+                            }
+                        }
+                        if !canFit { break }
+                    }
+                }
+                if canFit {
+                    return (c, r)
+                }
+            }
+        }
+        return (0, 0)
     }
     
     // MARK: - 2D Constraint-Based Layout Solver (Zero Overlap Guarantee)

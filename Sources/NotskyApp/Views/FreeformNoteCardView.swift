@@ -300,6 +300,7 @@ public struct FreeformNoteCardView: View {
     @StateObject private var formatController = NoteTextFormatController()
     
     @State private var isEditingTabIndex: Int? = nil
+    @FocusState private var isTabFocused: Bool
     @State private var hoveredTabIndex: Int? = nil
     @State private var isHoveringPlusTab: Bool = false
     @State private var isHoveringCard: Bool = false
@@ -590,6 +591,7 @@ public struct FreeformNoteCardView: View {
                                     .textFieldStyle(.plain)
                                     .multilineTextAlignment(.center)
                                     .foregroundStyle(taskTextColor)
+                                    .focused($isTabFocused)
                                     .onSubmit {
                                         SensoryFeedback.buttonClicked()
                                         isEditingTabIndex = nil
@@ -640,8 +642,15 @@ public struct FreeformNoteCardView: View {
                                 }
                                 .onTapGesture {
                                     ensurePagesInitialized()
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                        note.activePageIndex = index
+                                    if isActive {
+                                        isEditingTabIndex = index
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                            isTabFocused = true
+                                        }
+                                    } else {
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                            note.activePageIndex = index
+                                        }
                                     }
                                     SensoryFeedback.buttonClicked()
                                 }
@@ -649,6 +658,9 @@ public struct FreeformNoteCardView: View {
                                     Button("Rename Tab") {
                                         ensurePagesInitialized()
                                         isEditingTabIndex = index
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                            isTabFocused = true
+                                        }
                                     }
                                     if note.pages.count > 1 {
                                         Button(role: .destructive, action: {

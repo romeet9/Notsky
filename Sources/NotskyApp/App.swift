@@ -16,7 +16,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = iconImg
         }
         AppSettings.shared.applyDockPolicy()
-        WidgetWindowManager.shared.start()
+        
+        if CommandLine.arguments.contains("--fill-demo-data") {
+            WidgetWindowManager.shared.fillDemoData()
+        } else {
+            WidgetWindowManager.shared.start()
+        }
         GlobalHotKeyManager.shared.setup()
     }
     
@@ -160,6 +165,16 @@ struct NotskyApp: App {
                 manager.spawnNewFinderWidget()
             }
             .keyboardShortcut("f", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Populate Demo Data (Screen Recording)") {
+                manager.fillDemoData()
+            }
+
+            Button("Clear Workspace") {
+                manager.clearWorkspace()
+            }
 
             Divider()
 

@@ -53,6 +53,7 @@ public struct NoteCardView: View {
     public var onDelete: () -> Void
     
     @State private var isEditingTitle: Bool = false
+    @FocusState private var isTitleFocused: Bool
     @State private var isLightHeader: Bool = false
     @State private var isHoveringCard: Bool = false
     @State private var isHoveringPlus: Bool = false
@@ -383,17 +384,21 @@ public struct NoteCardView: View {
                             .textFieldStyle(.plain)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(taskTextColor)
+                            .focused($isTitleFocused)
                             .onSubmit {
                                 SensoryFeedback.buttonClicked()
                                 isEditingTitle = false
                             }
                     } else {
-                        Text(note.title)
+                        Text(note.title.isEmpty ? "Title" : note.title)
                             .font(.system(size: 13, weight: .medium, design: .default))
                             .foregroundStyle(taskTextColor)
                             .lineLimit(1)
-                            .onTapGesture(count: 2) {
+                            .onTapGesture {
                                 isEditingTitle = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    isTitleFocused = true
+                                }
                             }
                     }
                 }
@@ -406,43 +411,37 @@ public struct NoteCardView: View {
                         .strokeBorder(specularBorderGradient, lineWidth: 0.75)
                 )
                 .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                .contentShape(Capsule())
 
-                // Section 2: Independent Per-Group Focus Timer Pill
-                if showControls || note.isTimerRunning {
-                    Button(action: {
-                        toggleTimer()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: note.isTimerRunning ? "pause.fill" : "play.fill")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(note.isTimerRunning ? Color.orange : buttonIconColor)
-                            
-                            Text(timeString)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundStyle(note.isTimerRunning ? (isDark ? Color.white : Color.orange) : taskTextColor.opacity(0.88))
-                        }
-                        .padding(.horizontal, 12)
-                        .frame(height: 36)
-                        .background(buttonBackgroundColor(hovering: isHoveringTimer), in: Capsule())
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(
-                            Capsule()
-                                .strokeBorder(note.isTimerRunning ? timerHighlightGradient : specularBorderGradient, lineWidth: 0.75)
-                        )
-                        .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
-                        .contentShape(Capsule())
+                // Section 2: Independent Per-Group Focus Timer Pill (Always Visible)
+                Button(action: {
+                    toggleTimer()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: note.isTimerRunning ? "pause.fill" : "play.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(note.isTimerRunning ? Color.orange : buttonIconColor)
+                        
+                        Text(timeString)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(note.isTimerRunning ? (isDark ? Color.white : Color.orange) : taskTextColor.opacity(0.88))
                     }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringTimer = $0 }
-                    .help(note.isTimerRunning ? "Click to Pause" : "Click to Start Focus Session")
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.85).combined(with: .opacity).combined(with: .move(edge: .trailing)),
-                        removal: .scale(scale: 0.85).combined(with: .opacity).combined(with: .move(edge: .trailing))
-                    ))
+                    .padding(.horizontal, 12)
+                    .frame(height: 36)
+                    .background(buttonBackgroundColor(hovering: isHoveringTimer), in: Capsule())
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(note.isTimerRunning ? timerHighlightGradient : specularBorderGradient, lineWidth: 0.75)
+                    )
+                    .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                    .contentShape(Capsule())
                 }
+                .buttonStyle(.plain)
+                .onHover { isHoveringTimer = $0 }
+                .help(note.isTimerRunning ? "Click to Pause" : "Click to Start Focus Session")
             }
-            .animation(.spring(response: 0.28, dampingFraction: 0.85), value: showControls || note.isTimerRunning)
             .frame(maxWidth: cardWidth - 28)
 
             Spacer(minLength: 0)
