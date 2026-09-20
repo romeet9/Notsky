@@ -32,6 +32,7 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
+@MainActor
 public struct SettingsView: View {
     @Binding public var selectedItem: SettingsSidebarItem
     @State private var searchText: String = ""

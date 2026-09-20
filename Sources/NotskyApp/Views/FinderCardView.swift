@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 
+@MainActor
 public struct FinderCardView: View {
     @Binding public var note: NoteCard
     @Environment(\.colorScheme) private var colorScheme

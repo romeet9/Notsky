@@ -36,6 +36,7 @@ public struct VisualEffectBlur: NSViewRepresentable {
 
 // MARK: - Drawer Shelf View
 
+@MainActor
 public struct DrawerShelfView: View {
     @ObservedObject private var manager = WidgetWindowManager.shared
     @ObservedObject private var drawerManager = DrawerWindowManager.shared

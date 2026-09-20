@@ -289,6 +289,7 @@ struct MacMarkdownTextEditor: NSViewRepresentable {
 }
 
 
+@MainActor
 public struct FreeformNoteCardView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Bindable private var settings = AppSettings.shared

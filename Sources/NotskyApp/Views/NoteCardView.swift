@@ -44,6 +44,7 @@ public enum PomodoroPreset: String, CaseIterable {
     }
 }
 
+@MainActor
 public struct NoteCardView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Bindable private var settings = AppSettings.shared
@@ -814,8 +815,9 @@ public struct NoteCardView: View {
     }
 
     private func updateLuminance() {
+        let path = note.headerImagePath
         DispatchQueue.global(qos: .userInitiated).async {
-            let isLight = ImageLuminanceDetector.isLightImage(at: note.headerImagePath)
+            let isLight = ImageLuminanceDetector.isLightImage(at: path)
             DispatchQueue.main.async {
                 self.isLightHeader = isLight
             }

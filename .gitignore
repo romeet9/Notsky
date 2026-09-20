@@ -6,7 +6,10 @@
 *.xcuserdata/
 DerivedData/
 
-# macOS
+# macOS & Artifacts
 .DS_Store
 *.swp
 *~
+*.zip
+*.app
+
