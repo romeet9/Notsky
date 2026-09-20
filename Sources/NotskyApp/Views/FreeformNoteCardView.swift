@@ -254,6 +254,7 @@ struct MacMarkdownTextEditor: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
         
+        context.coordinator.parent = self
         formatController.textView = textView
         formatController.fontSize = fontSize
         formatController.textColor = textColor
@@ -569,142 +570,133 @@ public struct FreeformNoteCardView: View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
 
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(Array(currentPages.enumerated()), id: \.element.id) { index, page in
-                            let isActive = (note.activePageIndex == index)
-                            let isEditingThisTab = (isEditingTabIndex == index)
-                            
-                            if isEditingThisTab {
-                                HStack(spacing: 4) {
-                                    TextField("Title", text: Binding(
-                                        get: { index < note.pages.count ? note.pages[index].title : page.title },
-                                        set: { val in
-                                            ensurePagesInitialized()
-                                            if index < note.pages.count { note.pages[index].title = val }
-                                        }
-                                    ))
-                                    .font(.system(size: 13, weight: .semibold, design: .default))
-                                    .textFieldStyle(.plain)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(taskTextColor)
-                                    .focused($isTabFocused)
-                                    .onSubmit {
-                                        SensoryFeedback.buttonClicked()
-                                        isEditingTabIndex = nil
-                                    }
-                                }
-                                .padding(.horizontal, 14)
-                                .frame(height: 36)
-                                .background(sheetBackgroundColor, in: Capsule())
-                                .background(.ultraThinMaterial, in: Capsule())
-                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                                .shadow(color: Color.black.opacity(isDark ? 0.04 : 0.02), radius: 3, x: 0, y: 1)
-                            } else {
-                                HStack(spacing: 6) {
-                                    Text(page.title.isEmpty ? "Note \(index + 1)" : page.title)
-                                        .font(.system(size: 13, weight: isActive ? .semibold : .medium, design: .default))
-                                        .foregroundStyle(isActive ? taskTextColor : taskTextColor.opacity(0.65))
-                                        .lineLimit(1)
-
-                                    if note.pages.count > 1 {
-                                        Button(action: {
-                                            deleteTab(at: index)
-                                        }) {
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 9, weight: .bold))
-                                                .foregroundStyle(isActive ? taskTextColor.opacity(0.85) : taskTextColor.opacity(0.50))
-                                                .frame(width: 14, height: 14)
-                                                .contentShape(Rectangle())
-                                        }
-                                        .buttonStyle(.plain)
-                                        .help("Delete Note Tab")
-                                    }
-                                }
-                                .padding(.horizontal, isActive ? 14 : 12)
-                                .frame(height: 36)
-                                .background(
-                                    isActive ? sheetBackgroundColor : sheetBackgroundColor.opacity(0.40),
-                                    in: Capsule()
-                                )
-                                .background(.ultraThinMaterial, in: Capsule())
-                                .overlay(
-                                    Capsule()
-                                        .strokeBorder(isActive ? specularBorderGradient : LinearGradient(colors: [Color.white.opacity(isDark ? 0.12 : 0.35), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: isActive ? 0.75 : 0.5)
-                                )
-                                .shadow(color: Color.black.opacity(isActive ? (isDark ? 0.04 : 0.02) : 0), radius: 3, x: 0, y: 1)
-                                .contentShape(Capsule())
-                                .onHover { inside in
-                                    hoveredTabIndex = inside ? index : nil
-                                }
-                                .onTapGesture {
+            HStack(spacing: 8) {
+                ForEach(Array(currentPages.enumerated()), id: \.offset) { index, page in
+                    let isActive = (note.activePageIndex == index)
+                    let isEditingThisTab = (isEditingTabIndex == index)
+                    
+                    if isEditingThisTab {
+                        HStack(spacing: 4) {
+                            TextField("Title", text: Binding(
+                                get: { index < note.pages.count ? note.pages[index].title : page.title },
+                                set: { val in
                                     ensurePagesInitialized()
-                                    if isActive {
-                                        isEditingTabIndex = index
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                            isTabFocused = true
-                                        }
-                                    } else {
-                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                            note.activePageIndex = index
-                                        }
-                                    }
-                                    SensoryFeedback.buttonClicked()
+                                    if index < note.pages.count { note.pages[index].title = val }
                                 }
-                                .contextMenu {
-                                    Button("Rename Tab") {
-                                        ensurePagesInitialized()
-                                        isEditingTabIndex = index
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                            isTabFocused = true
-                                        }
+                            ))
+                            .font(.system(size: 13, weight: .semibold, design: .default))
+                            .textFieldStyle(.plain)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(taskTextColor)
+                            .focused($isTabFocused)
+                            .onSubmit {
+                                SensoryFeedback.buttonClicked()
+                                isEditingTabIndex = nil
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .frame(height: 36)
+                        .background(sheetBackgroundColor, in: Capsule())
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                        .shadow(color: Color.black.opacity(isDark ? 0.04 : 0.02), radius: 3, x: 0, y: 1)
+                    } else {
+                        Button(action: {
+                            ensurePagesInitialized()
+                            if isActive {
+                                isEditingTabIndex = index
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    isTabFocused = true
+                                }
+                            } else {
+                                isEditingTabIndex = nil
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                    note.activePageIndex = index
+                                }
+                            }
+                            SensoryFeedback.buttonClicked()
+                        }) {
+                            HStack(spacing: 6) {
+                                Text(page.title.isEmpty ? "Note \(index + 1)" : page.title)
+                                    .font(.system(size: 13, weight: isActive ? .semibold : .medium, design: .default))
+                                    .foregroundStyle(isActive ? taskTextColor : taskTextColor.opacity(0.65))
+                                    .lineLimit(1)
+
+                                if note.pages.count > 1 {
+                                    Button(action: {
+                                        deleteTab(at: index)
+                                    }) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(isActive ? taskTextColor.opacity(0.85) : taskTextColor.opacity(0.50))
+                                            .frame(width: 14, height: 14)
+                                            .contentShape(Rectangle())
                                     }
-                                    if note.pages.count > 1 {
-                                        Button(role: .destructive, action: {
-                                            deleteTab(at: index)
-                                        }) {
-                                            Label("Delete Tab", systemImage: "trash")
-                                        }
-                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Delete Note Tab")
+                                }
+                            }
+                            .padding(.horizontal, isActive ? 14 : 12)
+                            .frame(height: 36)
+                            .background(
+                                isActive ? sheetBackgroundColor : sheetBackgroundColor.opacity(0.40),
+                                in: Capsule()
+                            )
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .strokeBorder(isActive ? specularBorderGradient : LinearGradient(colors: [Color.white.opacity(isDark ? 0.12 : 0.35), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: isActive ? 0.75 : 0.5)
+                            )
+                            .shadow(color: Color.black.opacity(isActive ? (isDark ? 0.04 : 0.02) : 0), radius: 3, x: 0, y: 1)
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { inside in
+                            hoveredTabIndex = inside ? index : nil
+                        }
+                        .contextMenu {
+                            Button("Rename Tab") {
+                                ensurePagesInitialized()
+                                isEditingTabIndex = index
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    isTabFocused = true
+                                }
+                            }
+                            if note.pages.count > 1 {
+                                Button(role: .destructive, action: {
+                                    deleteTab(at: index)
+                                }) {
+                                    Label("Delete Tab", systemImage: "trash")
                                 }
                             }
                         }
-
-                        // Plus (+) Button to Add a New Tab (Max 3 Tabs)
-                        Button(action: {
-                            guard canAddTab else { return }
-                            addNewTab()
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(canAddTab ? buttonIconColor : buttonIconColor.opacity(0.35))
-                                .frame(width: 36, height: 36)
-                                .background(buttonBackgroundColor(hovering: canAddTab && isHoveringPlusTab), in: Circle())
-                                .background(.ultraThinMaterial, in: Circle())
-                                .overlay(
-                                    Circle()
-                                        .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-                                )
-                                .shadow(color: Color.black.opacity(isDark ? 0.04 : 0.02), radius: 3, x: 0, y: 1)
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(!canAddTab)
-                        .onHover { isHoveringPlusTab = $0 }
-                        .help(canAddTab ? "Add New Note Tab" : "Maximum 3 tabs reached")
                     }
-                    .padding(.horizontal, 6)
-                    .frame(minWidth: cardWidth - 28, alignment: .center)
-                    .frame(height: 40)
                 }
-                .frame(maxWidth: cardWidth - 28)
 
-                Spacer(minLength: 0)
+                // Plus (+) Button to Add a New Tab (Max 3 Tabs)
+                if canAddTab {
+                    Button(action: {
+                        addNewTab()
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(buttonIconColor)
+                            .frame(width: 36, height: 36)
+                            .background(buttonBackgroundColor(hovering: isHoveringPlusTab), in: Circle())
+                            .background(.ultraThinMaterial, in: Circle())
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(specularBorderGradient, lineWidth: 0.75)
+                            )
+                            .shadow(color: Color.black.opacity(isDark ? 0.04 : 0.02), radius: 3, x: 0, y: 1)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { isHoveringPlusTab = $0 }
+                    .help("Add New Note Tab")
+                }
             }
-            .frame(width: cardWidth, height: headerHeight, alignment: .center)
+            .frame(maxWidth: cardWidth - 28, alignment: .center)
 
             Spacer(minLength: 0)
         }
