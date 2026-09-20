@@ -58,41 +58,29 @@ public final class NoteStore {
     public init() {
         let pack = WallpaperPackManager.shared.activePack
         let items = pack.items
-        let path0 = items.indices.contains(0) ? items[0].path : "/Users/romeet/Downloads/red_distortion_2.heic"
-        let path1 = items.indices.contains(1) ? items[1].path : "preset://aurora_violet"
-        let path2 = items.indices.contains(2) ? items[2].path : "preset://aurora_sunset"
-        let path3 = items.indices.contains(3) ? items[3].path : "preset://aurora_emerald"
+        let path0 = items.indices.contains(0) ? items[0].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let path1 = items.indices.contains(1) ? items[1].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let path2 = items.indices.contains(2) ? items[2].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let path3 = items.indices.contains(3) ? items[3].path : WallpaperPackManager.shared.nextWallpaperPath()
         
-        // Initial notes layout:
+        // Initial clean notes layout with all 4 widgets empty and ready:
         // Top Row: 2 Task Cards
-        // Bottom Row: AI Notes (586x364)
+        // Bottom Row: Freeform Notes (586x364)
         // Right Side: notskyai Finder (586x752)
         self.notes = [
             NoteCard(
-                title: "Design Iterations",
+                title: "To Do",
                 headerImagePath: path0,
-                items: [
-                    NoteItem(text: "Refine widget glassmorphism & specular borders", isCompleted: true),
-                    NoteItem(text: "Implement 2-column grid layout with 24pt gutter", isCompleted: true),
-                    NoteItem(text: "Tune dark mode ambient drop shadows & diffusion", isCompleted: false),
-                    NoteItem(text: "Design responsive card resize handles", isCompleted: false),
-                    NoteItem(text: "Audit SF Pro typography and tracking", isCompleted: false)
-                ],
+                items: [],
                 gridCol: 0,
                 gridRow: 0,
                 width: 281,
                 height: 364
             ),
             NoteCard(
-                title: "Launch Checklist",
+                title: "Daily Focus",
                 headerImagePath: path1,
-                items: [
-                    NoteItem(text: "Finalize macOS native AppKit desktop integration", isCompleted: true),
-                    NoteItem(text: "Configure auto-launch on system startup", isCompleted: false),
-                    NoteItem(text: "Test multi-display grid snapping behavior", isCompleted: false),
-                    NoteItem(text: "Prepare Product Hunt release assets", isCompleted: false),
-                    NoteItem(text: "Record 60fps quick demo walkthrough video", isCompleted: false)
-                ],
+                items: [],
                 gridCol: 1,
                 gridRow: 0,
                 width: 281,
@@ -100,9 +88,9 @@ public final class NoteStore {
             ),
             NoteCard(
                 cardType: .notes,
-                title: "Strategy",
-                noteContent: NoteStore.defaultDemoNoteContent,
-                pages: NoteStore.defaultDemoPages,
+                title: "Notes",
+                noteContent: "",
+                pages: [NotePage(title: "Note 1", content: "")],
                 activePageIndex: 0,
                 headerImagePath: path2,
                 items: [],
@@ -145,7 +133,7 @@ public final class NoteStore {
         notes.append(newCard)
     }
     
-    public func addFreeformNote(title: String = "Quick Note", content: String = NoteStore.defaultDemoNoteContent) {
+    public func addFreeformNote(title: String = "Quick Note", content: String = "") {
         let count = notes.count
         let offset = Double(count * 40)
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -155,7 +143,7 @@ public final class NoteStore {
             cardType: .notes,
             title: title,
             noteContent: content,
-            pages: NoteStore.defaultDemoPages,
+            pages: [NotePage(title: "Note 1", content: content)],
             activePageIndex: 0,
             headerImagePath: nextWallpaper,
             items: [],

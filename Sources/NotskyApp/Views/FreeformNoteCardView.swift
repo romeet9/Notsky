@@ -956,7 +956,7 @@ public struct FreeformNoteCardView: View {
     // MARK: - Multi-Tab Actions
     private func ensurePagesInitialized() {
         if note.pages.isEmpty {
-            note.pages = NoteStore.defaultDemoPages
+            note.pages = [NotePage(title: "Note 1", content: note.noteContent)]
             note.activePageIndex = 0
         }
     }
@@ -965,50 +965,8 @@ public struct FreeformNoteCardView: View {
         ensurePagesInitialized()
         guard note.pages.count < 3 else { return }
         let nextIndex = note.pages.count + 1
-        let titles = ["Strategy", "Ideas", "Snippets"]
-        let title = nextIndex <= titles.count ? titles[nextIndex - 1] : "Note \(nextIndex)"
-        
-        let sampleContents = [
-            """
-**Sprint & Execution Goals**
-
-• **Milestone**: Ship native macOS desktop widget notes & focus studio.
-• *Typography Polish*: SF Pro font traits for bold and italic styling.
-• *Canvas Layout*: Smooth drag-to-reorder and dynamic snapping guides.
-
-*“Execution is everything.”*
-""",
-            """
-**Research & Insights**
-
-• **Market Analysis**: Identify key user pain points in desktop note-taking.
-• *Competitor Teardown*: Review Raycast and Notion desktop workflows.
-• *Key Takeaway*: Speed, zero distraction, and beautiful typography win every time.
-
-*“Knowledge has to be improved, challenged, and increased constantly.”*
-""",
-            """
-**Team Sync & Action Items**
-
-• **Sprint Review**: Frosted glass specular depth polish approved.
-• *Action Item*: Ship multi-tab quick notes with instant tab switching.
-• *Next Milestone*: Finalize keyboard shortcuts and macOS desktop canvas mode.
-
-*“Great things in business are never done by one person; they're done by a team.”*
-""",
-            """
-**Design Sprint & UI Polish**
-
-• **Contrast Audit**: Ensure text remains legible across dark and light wallpapers.
-• *Haptic Touch*: Trigger subtle click sound on every button tap.
-• *Zero Latency*: Instant typing without UI stutter.
-
-*“Details make perfection, and perfection is not a detail.”*
-"""
-        ]
-        let content = sampleContents[(nextIndex - 1) % sampleContents.count]
-        
-        let newPage = NotePage(title: title, content: content)
+        let title = "Note \(nextIndex)"
+        let newPage = NotePage(title: title, content: "")
         withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
             note.pages.append(newPage)
             note.activePageIndex = note.pages.count - 1

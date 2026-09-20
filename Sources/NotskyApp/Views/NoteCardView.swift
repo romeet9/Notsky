@@ -606,20 +606,33 @@ public struct NoteCardView: View {
     private var taskListView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: taskRowSpacing) {
-                ForEach($note.items) { $item in
-                    let itemIndex = (note.items.firstIndex(where: { $0.id == item.id }) ?? 0) + 1
-                    TaskItemRow(
-                        index: itemIndex,
-                        item: $item,
-                        taskTextColor: taskTextColor,
-                        completedTaskColor: completedTaskColor,
-                        accentColor: dynamicAccentColor,
-                        isDark: isDark,
-                        fontSize: taskFontSize,
-                        onDelete: {
-                            note.items.removeAll { $0.id == item.id }
-                        }
-                    )
+                if note.items.isEmpty && !isAddingTask {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("No tasks yet")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(taskTextColor.opacity(0.65))
+                        Text("Click + to add your first task")
+                            .font(.system(size: 12.5, weight: .regular))
+                            .foregroundStyle(taskTextColor.opacity(0.40))
+                    }
+                    .padding(.top, 16)
+                    .padding(.leading, 2)
+                } else {
+                    ForEach($note.items) { $item in
+                        let itemIndex = (note.items.firstIndex(where: { $0.id == item.id }) ?? 0) + 1
+                        TaskItemRow(
+                            index: itemIndex,
+                            item: $item,
+                            taskTextColor: taskTextColor,
+                            completedTaskColor: completedTaskColor,
+                            accentColor: dynamicAccentColor,
+                            isDark: isDark,
+                            fontSize: taskFontSize,
+                            onDelete: {
+                                note.items.removeAll { $0.id == item.id }
+                            }
+                        )
+                    }
                 }
             }
             .frame(width: contentWidth, alignment: .leading)
