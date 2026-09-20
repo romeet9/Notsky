@@ -104,11 +104,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isTimerRunning: true
         )
         
+        let card5 = NoteCard(
+            cardType: .finder,
+            title: "notskyai",
+            headerImagePath: w1,
+            items: [],
+            width: 360,
+            height: 460
+        )
+        
         let targets: [(String, NoteCard)] = [
             ("Notsky-Design-Iterations.png", card1),
             ("Notsky-Launch-Checklist.png", card2),
             ("Notsky-Strategy.png", card3),
-            ("Notsky-Daily-Focus.png", card4)
+            ("Notsky-Daily-Focus.png", card4),
+            ("Notsky-AI-Finder.png", card5)
         ]
         
         for (filename, note) in targets {

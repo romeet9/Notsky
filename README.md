@@ -11,7 +11,7 @@
 [![macOS](https://img.shields.io/badge/macOS-14.0%2B_Sonoma%20%7C%20Sequoia-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com/macos)
 [![Swift](https://img.shields.io/badge/Swift-6.0-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/UI-SwiftUI_Native-0071E3?style=for-the-badge&logo=swift&logoColor=white)](https://developer.apple.com/xcode/swiftui/)
-[![OpenRouter](https://img.shields.io/badge/AI-OpenRouter_Cloud-6366F1?style=for-the-badge&logo=openai&logoColor=white)](https://openrouter.ai)
+[![Release](https://img.shields.io/github/v/release/romeet9/Notsky?style=for-the-badge&color=22C55E&logo=github)](https://github.com/romeet9/Notsky/releases/latest)
 [![License](https://img.shields.io/badge/License-MIT-gray?style=for-the-badge)](LICENSE)
 
 <br />
@@ -25,6 +25,24 @@
 <img src="docs/screenshots/Notsky-Design-Iterations.png" alt="Notsky UI Widget Showcase" width="700" style="border-radius: 24px; box-shadow: 0 20px 48px rgba(0,0,0,0.4);" />
 
 </div>
+
+---
+
+## 📦 Download & Installation
+
+Download the latest pre-built application bundle for macOS Sonoma (14.0+) and Sequoia (15.0+):
+
+<div align="center">
+  <br />
+  <a href="https://github.com/romeet9/Notsky/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Notsky_v1.0.0_for_macOS-0071E3?style=for-the-badge&logo=apple&logoColor=white" height="40" alt="Download Notsky for macOS" />
+  </a>
+  <br /><br />
+</div>
+
+1. Head to **[Releases](https://github.com/romeet9/Notsky/releases/latest)** and download `Notsky-v1.0.0-macOS.zip`.
+2. Unzip and drag **`Notsky.app`** into your `/Applications` folder.
+3. Launch **Notsky** from Spotlight (`⌘ Space`) or Applications.
 
 ---
 
@@ -58,33 +76,47 @@
   <table>
     <tr>
       <td width="50%" align="center" valign="top">
-        <br/>
-        <b>Design Iterations Task Card</b>
         <br/><br/>
+        <h3>📋 Design Iterations Task Card</h3>
+        <p><i>Task group with interactive checklists, strike-through springs, and visual completion counters.</i></p>
+        <br/>
         <img src="docs/screenshots/Notsky-Design-Iterations.png" width="100%" alt="Design Iterations Task Card" />
         <br/><br/>
       </td>
       <td width="50%" align="center" valign="top">
-        <br/>
-        <b>Launch Checklist &amp; Pomodoro</b>
         <br/><br/>
+        <h3>⏱️ Launch Checklist &amp; Pomodoro</h3>
+        <p><i>Active focus countdown with progress ring, ambient pulsing glow, and live session stats.</i></p>
+        <br/>
         <img src="docs/screenshots/Notsky-Launch-Checklist.png" width="100%" alt="Launch Checklist &amp; Pomodoro" />
         <br/><br/>
       </td>
     </tr>
     <tr>
       <td width="50%" align="center" valign="top">
-        <br/>
-        <b>Strategy &amp; Multi-Tab Notes</b>
         <br/><br/>
+        <h3>📝 Strategy &amp; Multi-Tab Notes</h3>
+        <p><i>Rich-text freeform canvas with tabbed pages, quick note switching, and markdown styling.</i></p>
+        <br/>
         <img src="docs/screenshots/Notsky-Strategy.png" width="100%" alt="Strategy &amp; Multi-Tab Notes" />
         <br/><br/>
       </td>
       <td width="50%" align="center" valign="top">
-        <br/>
-        <b>Daily Focus Snapshot</b>
         <br/><br/>
+        <h3>🎯 Daily Focus Snapshot</h3>
+        <p><i>High-contrast dark mode card with customized task priority tags and export-ready framing.</i></p>
+        <br/>
         <img src="docs/screenshots/Notsky-Daily-Focus.png" width="100%" alt="Daily Focus Snapshot" />
+        <br/><br/>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center" valign="top">
+        <br/><br/>
+        <h3>✨ notskyai — Smart AI Assistant &amp; Document Finder</h3>
+        <p><i>Spotlight-style natural language search with temporal date filtering ("created yesterday", "last week"), inline file match chips, and OpenRouter AI summaries.</i></p>
+        <br/>
+        <img src="docs/screenshots/Notsky-AI-Finder.png" width="55%" alt="notskyai AI Finder Card" />
         <br/><br/>
       </td>
     </tr>
@@ -112,6 +144,9 @@
 ```
 NotskyApp/
 ├── Package.swift                     # Swift Package Manager Manifest
+├── .github/
+│   └── workflows/
+│       └── release.yml               # Automated macOS GitHub Actions release pipeline
 ├── Sources/
 │   └── NotskyApp/
 │       ├── App.swift                 # @main entry point, MenuBarExtra & App Delegate
@@ -143,6 +178,7 @@ NotskyApp/
 │               └── CardImageExporter.swift# 4K social media snapshot exporter
 └── Resources/
     ├── AppIcon.icns                  # macOS Standard App Icon
+    ├── Info.plist                    # Bundle metadata configuration
     └── MenuBarIcon.png               # Menu bar template asset
 ```
 
@@ -174,6 +210,7 @@ mkdir -p /Applications/Notsky.app/Contents/{MacOS,Resources}
 cp .build/release/NotskyApp /Applications/Notsky.app/Contents/MacOS/Notsky
 cp Resources/AppIcon.icns /Applications/Notsky.app/Contents/Resources/
 cp Resources/MenuBarIcon*.png /Applications/Notsky.app/Contents/Resources/
+cp Resources/Info.plist /Applications/Notsky.app/Contents/Info.plist
 
 # Launch Notsky
 open /Applications/Notsky.app

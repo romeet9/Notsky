@@ -9,9 +9,12 @@ public struct CardExportSnapshotView: View {
     private let canvasSize: CGFloat = 600
     
     private var isNotesType: Bool { note.cardType == .notes }
+    private var isFinderType: Bool { note.cardType == .finder }
     
     private var cardWidth: CGFloat {
-        if isNotesType {
+        if isFinderType {
+            return CGFloat(max(360, min(586, note.width > 281 ? note.width : 360)))
+        } else if isNotesType {
             return CGFloat(max(350, min(586, note.width > 281 ? note.width : 360)))
         } else {
             return CGFloat(max(300, min(586, note.width)))
@@ -19,7 +22,9 @@ public struct CardExportSnapshotView: View {
     }
     
     private var cardHeight: CGFloat {
-        if isNotesType {
+        if isFinderType {
+            return CGFloat(max(460, min(752, note.height > 364 ? note.height : 460)))
+        } else if isNotesType {
             return CGFloat(max(440, min(752, note.height > 364 ? note.height : 450)))
         } else {
             return CGFloat(max(440, min(752, note.height > 364 ? note.height : 450)))
@@ -106,7 +111,38 @@ public struct CardExportSnapshotView: View {
                 // Top Header Title / Tabs Bar (Inside Header Region)
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    if isNotesType {
+                    if isFinderType {
+                        // notskyai Title & Status Capsules
+                        HStack(spacing: 8) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Color.red)
+                                Text("notskyai")
+                                    .font(.system(size: 13, weight: .semibold, design: .default))
+                                    .foregroundStyle(taskTextColor)
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                            
+                            HStack(spacing: 5) {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 6, height: 6)
+                                Text("ready")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(taskTextColor.opacity(0.85))
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                        }
+                    } else if isNotesType {
                         // Multi-Tab bar for Notes
                         HStack(spacing: 6) {
                             let pages = note.pages.isEmpty ? [NotePage(title: note.title.isEmpty ? "Quick Note" : note.title, content: note.noteContent)] : note.pages
@@ -188,7 +224,16 @@ public struct CardExportSnapshotView: View {
                     VStack(spacing: 0) {
                         // 1. Top Toolbar with Buttons Visible
                         HStack {
-                            if isNotesType {
+                            if isFinderType {
+                                // Add Button (+ Circle)
+                                Image(systemName: "plus")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(buttonIconColor)
+                                    .frame(width: 36, height: 36)
+                                    .background(sheetBackgroundColor, in: Circle())
+                                    .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                    .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+                            } else if isNotesType {
                                 // Formatting Capsule (Bold, Italic, Bullets)
                                 HStack(spacing: 12) {
                                     Image(systemName: "bold")
@@ -221,9 +266,15 @@ public struct CardExportSnapshotView: View {
 
                             // Right Action Capsule: Download, Pin, Cycle, Photo, Trash
                             HStack(spacing: 10) {
-                                Image(systemName: "arrow.down.to.line")
-                                    .font(.system(size: 11.5, weight: .medium))
-                                    .foregroundStyle(buttonIconColor)
+                                if isFinderType {
+                                    Image(systemName: "key.fill")
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .foregroundStyle(buttonIconColor)
+                                } else {
+                                    Image(systemName: "arrow.down.to.line")
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .foregroundStyle(buttonIconColor)
+                                }
                                 Image(systemName: note.isPinned ? "pin.fill" : "pin")
                                     .font(.system(size: 11.5, weight: .medium))
                                     .foregroundStyle(note.isPinned ? Color.orange : buttonIconColor)
@@ -248,7 +299,81 @@ public struct CardExportSnapshotView: View {
                         .padding(.bottom, 6)
 
                         // 2. Body Content
-                        if isNotesType {
+                        if isFinderType {
+                            VStack(alignment: .leading, spacing: 10) {
+                                // User Query Bubble
+                                HStack {
+                                    Spacer()
+                                    Text("Find design tokens & icons from yesterday")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(Color.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(Color.red.opacity(0.85), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                
+                                // File Match Cards
+                                VStack(spacing: 5) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "doc.text.fill")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(Color.red)
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text("Tokens.swift")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(taskTextColor)
+                                            Text("2.4 KB · Modified Yesterday")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(taskTextColor.opacity(0.50))
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(sheetBackgroundColor.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(specularBorderGradient, lineWidth: 0.5))
+
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "app.badge.fill")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(Color.orange)
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text("AppIcon.icns")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(taskTextColor)
+                                            Text("1.2 MB · Modified Today")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(taskTextColor.opacity(0.50))
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(sheetBackgroundColor.opacity(0.7), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(specularBorderGradient, lineWidth: 0.5))
+                                }
+
+                                // AI Assistant Synthesis
+                                HStack(alignment: .top, spacing: 6) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundStyle(Color.red)
+                                        .font(.system(size: 11, weight: .bold))
+                                        .padding(.top, 2)
+                                    Text("Extracted liquid glass tokens and verified 1024×1024 Retina icon layers.")
+                                        .font(.system(size: 11.5, weight: .regular))
+                                        .foregroundStyle(taskTextColor)
+                                        .lineSpacing(2)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(sheetBackgroundColor.opacity(0.5), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 4)
+                            .frame(maxHeight: .infinity)
+                        } else if isNotesType {
                             let currentContent: String = note.pages.indices.contains(note.activePageIndex)
                                 ? note.pages[note.activePageIndex].content
                                 : note.noteContent
@@ -307,32 +432,55 @@ public struct CardExportSnapshotView: View {
                             .frame(maxHeight: .infinity)
                         }
 
-                        // 3. Bottom Toolbar
-                        HStack {
-                            if isNotesType {
-                                let plainText = (note.pages.indices.contains(note.activePageIndex) ? note.pages[note.activePageIndex].content : note.noteContent)
-                                    .replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
-                                let words = plainText.split { $0.isWhitespace || $0.isNewline }.count
-                                let chars = plainText.count
-                                Text("\(words) words · \(chars) chars")
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                        // 3. Bottom Toolbar / Search Bar
+                        if isFinderType {
+                            HStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(taskTextColor.opacity(0.50))
-                                    .padding(.leading, 18)
+                                Text("Ask notskyai or search files...")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(taskTextColor.opacity(0.40))
+                                Spacer()
+                                Image(systemName: "arrow.up.circle.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(Color.red)
                             }
-                            Spacer()
-                            Text("Add Group")
-                                .font(.system(size: 12, weight: .medium, design: .default))
-                                .foregroundStyle(buttonIconColor)
-                                .padding(.horizontal, 13)
-                                .frame(height: 32)
-                                .background(sheetBackgroundColor, in: Capsule())
-                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                                .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
-                                .padding(.trailing, 16)
+                            .padding(.horizontal, 12)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                            .padding(.top, 4)
+                        } else {
+                            HStack {
+                                if isNotesType {
+                                    let plainText = (note.pages.indices.contains(note.activePageIndex) ? note.pages[note.activePageIndex].content : note.noteContent)
+                                        .replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
+                                    let words = plainText.split { $0.isWhitespace || $0.isNewline }.count
+                                    let chars = plainText.count
+                                    Text("\(words) words · \(chars) chars")
+                                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                                        .foregroundStyle(taskTextColor.opacity(0.50))
+                                        .padding(.leading, 18)
+                                }
+                                Spacer()
+                                Text("Add Group")
+                                    .font(.system(size: 12, weight: .medium, design: .default))
+                                    .foregroundStyle(buttonIconColor)
+                                    .padding(.horizontal, 13)
+                                    .frame(height: 32)
+                                    .background(sheetBackgroundColor, in: Capsule())
+                                    .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                                    .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+                                    .padding(.trailing, 16)
+                            }
+                            .frame(width: cardWidth)
+                            .padding(.bottom, 16)
+                            .padding(.top, 4)
                         }
-                        .frame(width: cardWidth)
-                        .padding(.bottom, 16)
-                        .padding(.top, 4)
                     }
                 }
                 .frame(width: cardWidth, height: sheetHeight, alignment: .center)
