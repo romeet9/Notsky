@@ -22,7 +22,7 @@
 
 <br />
 
-<img src="docs/screenshots/Notsky-macOS-Workspace-Retina.png" alt="Notsky macOS Spatial Desktop Workspace" width="100%" style="border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.45);" />
+<video src="https://github.com/romeet9/Notsky/raw/main/docs/assets/Notsky-Preview.mp4" autoplay loop muted playsinline width="100%" style="border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.45);"></video>
 
 </div>
 
