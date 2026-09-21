@@ -500,7 +500,7 @@ public struct CardExportSnapshotView: View {
             .shadow(color: Color.black.opacity(0.40), radius: 36, x: 0, y: 16)
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
 
-            // 3. Top-Right Corner Branding Logo (Icon Only, No Text, No Background Border)
+            // 3. Top-Right Corner Branding Logo (Icon Only, No Text, No Background Border, Prominent Size)
             VStack {
                 HStack {
                     Spacer()
@@ -508,18 +508,18 @@ public struct CardExportSnapshotView: View {
                         Image(nsImage: icon)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 28, height: 28)
-                            .clipShape(RoundedRectangle(cornerRadius: 6.8, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 1.5)
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 10.5, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     } else {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundStyle(Color.red)
-                            .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 1.5)
+                            .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     }
                 }
-                .padding(.top, 18)
-                .padding(.trailing, 18)
+                .padding(.top, 20)
+                .padding(.trailing, 20)
                 
                 Spacer()
             }
