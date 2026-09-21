@@ -484,13 +484,10 @@ public struct FreeformNoteCardView: View {
                     )
                 }
             }
-            .frame(
-                width: CGFloat(currentPages.count) * cardWidth + CGFloat(max(0, currentPages.count - 1)) * tabGap,
-                alignment: .leading
-            )
-            .offset(x: -CGFloat(note.activePageIndex) * (cardWidth + tabGap))
-            .offset(y: headerHeight)
+            .offset(x: -CGFloat(min(note.activePageIndex, max(0, currentPages.count - 1))) * (cardWidth + tabGap))
             .animation(tabSlideAnimation, value: note.activePageIndex)
+            .frame(width: cardWidth, height: sheetHeight, alignment: .leading)
+            .offset(y: headerHeight)
             .zIndex(1)
 
             // 3. Top Title Tab Bar (Tabs + Plus Button) — Centered horizontally
