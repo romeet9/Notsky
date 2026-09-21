@@ -56,62 +56,119 @@ public final class NoteStore {
     ]
 
     public init() {
-        let pack = WallpaperPackManager.shared.activePack
-        let items = pack.items
-        let path0 = items.indices.contains(0) ? items[0].path : WallpaperPackManager.shared.nextWallpaperPath()
-        let path1 = items.indices.contains(1) ? items[1].path : WallpaperPackManager.shared.nextWallpaperPath()
-        let path2 = items.indices.contains(2) ? items[2].path : WallpaperPackManager.shared.nextWallpaperPath()
-        let path3 = items.indices.contains(3) ? items[3].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let packs = WallpaperPackManager.builtInPacks()
+        let items = packs.first?.items ?? []
         
-        // Initial clean notes layout with all 4 widgets empty and ready:
-        // Top Row: 2 Task Cards
-        // Bottom Row: Freeform Notes (586x364)
-        // Right Side: notskyai Finder (586x752)
-        self.notes = [
-            NoteCard(
-                title: "To Do",
-                headerImagePath: path0,
-                items: [],
-                gridCol: 0,
-                gridRow: 0,
-                width: 281,
-                height: 364
-            ),
-            NoteCard(
-                title: "Daily Focus",
-                headerImagePath: path1,
-                items: [],
-                gridCol: 1,
-                gridRow: 0,
-                width: 281,
-                height: 364
-            ),
-            NoteCard(
-                cardType: .notes,
-                title: "Notes",
-                noteContent: "",
-                pages: [NotePage(title: "Note 1", content: "")],
-                activePageIndex: 0,
-                headerImagePath: path2,
-                items: [],
-                gridCol: 0,
-                gridRow: 1,
-                width: 586,
-                height: 364
-            ),
-            NoteCard(
-                cardType: .finder,
-                title: "notskyai",
-                noteContent: "",
-                headerImagePath: path3,
-                items: [],
-                chatMessages: [],
-                gridCol: 2,
-                gridRow: 0,
-                width: 586,
-                height: 752
-            )
+        let w0 = items.indices.contains(0) ? items[0].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let w1 = items.indices.contains(4) ? items[4].path : (items.indices.contains(1) ? items[1].path : WallpaperPackManager.shared.nextWallpaperPath())
+        let w2 = items.indices.contains(2) ? items[2].path : WallpaperPackManager.shared.nextWallpaperPath()
+        let w3 = items.indices.contains(1) ? items[1].path : (items.indices.contains(3) ? items[3].path : WallpaperPackManager.shared.nextWallpaperPath())
+        
+        let card1 = NoteCard(
+            cardType: .tasks,
+            title: "Design Iterations",
+            headerImagePath: w0,
+            items: [
+                NoteItem(text: "Explore liquid-glass refraction shaders", isCompleted: true),
+                NoteItem(text: "Refine superellipse continuous corners (40pt)", isCompleted: true),
+                NoteItem(text: "Tune dynamic wallpaper luminance tinting", isCompleted: true),
+                NoteItem(text: "Test multi-monitor cursor magnetic snapping", isCompleted: false),
+                NoteItem(text: "Polish over-dock slide shelf animations", isCompleted: false)
+            ],
+            gridCol: 0,
+            gridRow: 0,
+            width: 281,
+            height: 364,
+            timerDuration: 25 * 60,
+            timeRemaining: 25 * 60,
+            isTimerRunning: false
+        )
+        
+        let card2 = NoteCard(
+            cardType: .tasks,
+            title: "Launch Checklist",
+            headerImagePath: w1,
+            items: [
+                NoteItem(text: "Finalize macOS AppIcon & Dock integration", isCompleted: true),
+                NoteItem(text: "Verify template menu bar icon optical height", isCompleted: true),
+                NoteItem(text: "Test slide-up drawer over sticky dock", isCompleted: true),
+                NoteItem(text: "Render 4K UI widget showcase mockups", isCompleted: true),
+                NoteItem(text: "Ship v1.0.0 release build to GitHub", isCompleted: false)
+            ],
+            gridCol: 1,
+            gridRow: 0,
+            width: 281,
+            height: 364,
+            timerDuration: 25 * 60,
+            timeRemaining: 18 * 60 + 42,
+            isTimerRunning: true
+        )
+        
+        let strategyContent = """
+**Core Architecture Principles**
+
+• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
+
+• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
+
+• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
+"""
+        let ideasContent = """
+**Product Ideas & Brainstorming**
+
+• **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
+• **Trackpad Gestures**: Swipe smoothly between note tabs.
+• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
+"""
+        let snippetsContent = """
+**Developer & Design Snippets**
+
+• `git commit -m "feat: multi-tab quick notes"`
+• `swift build -c release`
+• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
+"""
+        
+        let card3 = NoteCard(
+            cardType: .notes,
+            title: "Strategy & Notes",
+            noteContent: strategyContent,
+            pages: [
+                NotePage(title: "Strategy", content: strategyContent),
+                NotePage(title: "Ideas", content: ideasContent),
+                NotePage(title: "Snippets", content: snippetsContent)
+            ],
+            activePageIndex: 0,
+            headerImagePath: w2,
+            items: [],
+            gridCol: 0,
+            gridRow: 1,
+            width: 586,
+            height: 364
+        )
+        
+        let sampleFiles = [
+            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "/Users/romeet/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
+            FinderFileItem(name: "Design_System_Tokens.pdf", path: "/Users/romeet/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
+            FinderFileItem(name: "Notsky_Release_Notes.md", path: "/Users/romeet/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
         ]
+        
+        let card4 = NoteCard(
+            cardType: .finder,
+            title: "notskyai",
+            noteContent: "",
+            headerImagePath: w3,
+            items: [],
+            chatMessages: [
+                ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
+                ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
+            ],
+            gridCol: 2,
+            gridRow: 0,
+            width: 586,
+            height: 752
+        )
+        
+        self.notes = [card1, card2, card3, card4]
     }
     
     public func addNote() {
