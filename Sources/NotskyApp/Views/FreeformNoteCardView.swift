@@ -337,6 +337,14 @@ public struct FreeformNoteCardView: View {
     private var sheetHeight: CGFloat { max(100, cardHeight - headerHeight) }
     private let cornerRadius: CGFloat = 40
     
+    // Spacing between tab cards when sliding
+    private let tabGap: CGFloat = 24.0
+    
+    // Weighted jelly bouncy spring animation for macOS fluid interaction
+    private var tabSlideAnimation: Animation {
+        .spring(response: 0.44, dampingFraction: 0.64, blendDuration: 0.16)
+    }
+    
     private let minCardWidth: Double = 360
     private let maxCardWidth: Double = 860
     private let minCardHeight: Double = 260
@@ -453,8 +461,8 @@ public struct FreeformNoteCardView: View {
                 .frame(width: cardWidth, height: cardHeight)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
-            // 2. Foreground Content Sheet — Multi-Tab Sliding Track
-            HStack(spacing: 0) {
+            // 2. Foreground Content Sheet — Multi-Tab Sliding Track with Distinct Gap & Bouncy Spring
+            HStack(spacing: tabGap) {
                 ForEach(Array(currentPages.enumerated()), id: \.element.id) { index, page in
                     ZStack(alignment: .top) {
                         // Frosted Glass Tint & Hardware Accelerated Material
@@ -476,10 +484,13 @@ public struct FreeformNoteCardView: View {
                     )
                 }
             }
-            .frame(width: cardWidth * CGFloat(max(1, currentPages.count)), alignment: .leading)
-            .offset(x: -CGFloat(note.activePageIndex) * cardWidth)
+            .frame(
+                width: CGFloat(currentPages.count) * cardWidth + CGFloat(max(0, currentPages.count - 1)) * tabGap,
+                alignment: .leading
+            )
+            .offset(x: -CGFloat(note.activePageIndex) * (cardWidth + tabGap))
             .offset(y: headerHeight)
-            .animation(.spring(response: 0.38, dampingFraction: 0.82, blendDuration: 0.12), value: note.activePageIndex)
+            .animation(tabSlideAnimation, value: note.activePageIndex)
             .zIndex(1)
 
             // 3. Top Title Tab Bar (Tabs + Plus Button) — Centered horizontally
@@ -605,7 +616,7 @@ public struct FreeformNoteCardView: View {
                                 isEditingTabIndex = nil
                                 let newDirection: Edge = (index > note.activePageIndex) ? .trailing : .leading
                                 self.slideDirection = newDirection
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
+                                withAnimation(tabSlideAnimation) {
                                     note.activePageIndex = index
                                 }
                             }
@@ -972,7 +983,7 @@ public struct FreeformNoteCardView: View {
         let title = "Note \(nextIndex)"
         let newPage = NotePage(title: title, content: "")
         self.slideDirection = .trailing
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
+        withAnimation(tabSlideAnimation) {
             note.pages.append(newPage)
             note.activePageIndex = note.pages.count - 1
             isEditingTabIndex = nil
@@ -984,7 +995,7 @@ public struct FreeformNoteCardView: View {
         ensurePagesInitialized()
         guard note.pages.count > 1, note.pages.indices.contains(index) else { return }
         self.slideDirection = .leading
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
+        withAnimation(tabSlideAnimation) {
             note.pages.remove(at: index)
             if note.activePageIndex >= note.pages.count {
                 note.activePageIndex = max(0, note.pages.count - 1)
