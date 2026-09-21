@@ -405,41 +405,35 @@ public struct FreeformNoteCardView: View {
         return note.pages
     }
     
-    private var currentActiveContent: String {
-        if note.pages.indices.contains(note.activePageIndex) {
-            return note.pages[note.activePageIndex].content
-        }
-        return note.noteContent
-    }
-    
-    private var currentContentBinding: Binding<String> {
+    private func contentBinding(for index: Int) -> Binding<String> {
         Binding<String>(
             get: {
-                if note.pages.indices.contains(note.activePageIndex) {
-                    return note.pages[note.activePageIndex].content
+                if note.pages.indices.contains(index) {
+                    return note.pages[index].content
                 }
                 return note.noteContent
             },
             set: { newValue in
-                if note.pages.indices.contains(note.activePageIndex) {
-                    note.pages[note.activePageIndex].content = newValue
+                ensurePagesInitialized()
+                if note.pages.indices.contains(index) {
+                    note.pages[index].content = newValue
+                    if index == note.activePageIndex {
+                        note.noteContent = newValue
+                    }
                 }
-                note.noteContent = newValue
             }
         )
     }
     
-    private var plainVisibleText: String {
-        currentActiveContent.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
-    }
-    
-    private var wordCount: Int {
-        let words = plainVisibleText.split { $0.isWhitespace || $0.isNewline }
+    private func wordCount(for text: String) -> Int {
+        let plain = text.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
+        let words = plain.split { $0.isWhitespace || $0.isNewline }
         return words.count
     }
     
-    private var charCount: Int {
-        plainVisibleText.count
+    private func charCount(for text: String) -> Int {
+        let plain = text.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "*", with: "")
+        return plain.count
     }
 
     public init(
@@ -459,31 +453,33 @@ public struct FreeformNoteCardView: View {
                 .frame(width: cardWidth, height: cardHeight)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
-            // 2. Foreground Content Sheet (Frosted Glass with Notes Editor)
-            ZStack(alignment: .top) {
-                // Frosted Glass Tint & Hardware Accelerated Material
-                sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+            // 2. Foreground Content Sheet — Multi-Tab Sliding Track
+            HStack(spacing: 0) {
+                ForEach(Array(currentPages.enumerated()), id: \.element.id) { index, page in
+                    ZStack(alignment: .top) {
+                        // Frosted Glass Tint & Hardware Accelerated Material
+                        sheetBackgroundColor
+                            .background(.ultraThinMaterial)
 
-                // Main Notes Content
-                VStack(spacing: 0) {
-                    topToolbar
-                    notesEditorArea
-                    bottomToolbar
+                        // Main Notes Content for this tab page
+                        VStack(spacing: 0) {
+                            topToolbar
+                            notesEditorArea(for: index)
+                            bottomToolbar(for: index)
+                        }
+                    }
+                    .frame(width: cardWidth, height: sheetHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(specularBorderGradient, lineWidth: 0.75)
+                    )
                 }
             }
-            .frame(width: cardWidth, height: sheetHeight)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-            )
+            .frame(width: cardWidth * CGFloat(max(1, currentPages.count)), alignment: .leading)
+            .offset(x: -CGFloat(note.activePageIndex) * cardWidth)
             .offset(y: headerHeight)
-            .id("tab_sheet_\(note.id)_\(note.activePageIndex)")
-            .transition(.asymmetric(
-                insertion: .move(edge: slideDirection == .trailing ? .trailing : .leading).combined(with: .opacity),
-                removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
-            ))
+            .animation(.spring(response: 0.38, dampingFraction: 0.82, blendDuration: 0.12), value: note.activePageIndex)
             .zIndex(1)
 
             // 3. Top Title Tab Bar (Tabs + Plus Button) — Centered horizontally
@@ -857,12 +853,13 @@ public struct FreeformNoteCardView: View {
         .padding(.bottom, 4)
     }
 
-    // MARK: - 3. Notes Editor Area (Bound to Active Tab)
+    // MARK: - 3. Notes Editor Area (Bound to Tab Index)
     @ViewBuilder
-    private var notesEditorArea: some View {
+    private func notesEditorArea(for index: Int) -> some View {
+        let content = note.pages.indices.contains(index) ? note.pages[index].content : ""
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topLeading) {
-                if currentActiveContent.isEmpty {
+                if content.isEmpty {
                     Text("Write your quick notes here...")
                         .font(.system(size: noteFontSize, weight: .regular, design: .default))
                         .foregroundStyle(placeholderColor)
@@ -872,14 +869,14 @@ public struct FreeformNoteCardView: View {
                 }
 
                 MacMarkdownTextEditor(
-                    text: currentContentBinding,
+                    text: contentBinding(for: index),
                     fontSize: noteFontSize,
                     textColor: isDark ? NSColor.white : NSColor.black,
                     placeholderText: "Write your quick notes here...",
                     placeholderColor: isDark ? NSColor.white.withAlphaComponent(0.35) : NSColor.black.withAlphaComponent(0.35),
                     formatController: formatController
                 )
-                .id("tab_\(note.id)_\(note.activePageIndex)_\(note.pages.count)")
+                .id("tab_editor_\(note.id)_\(index)")
                 .frame(minHeight: max(60, sheetHeight - 126))
             }
             .frame(width: contentWidth, alignment: .topLeading)
@@ -896,11 +893,15 @@ public struct FreeformNoteCardView: View {
 
     // MARK: - 4. Bottom Toolbar (Capsule Stats Label & Single Add Card Button)
     @ViewBuilder
-    private var bottomToolbar: some View {
+    private func bottomToolbar(for index: Int) -> some View {
+        let content = note.pages.indices.contains(index) ? note.pages[index].content : ""
+        let words = wordCount(for: content)
+        let chars = charCount(for: content)
+        
         HStack {
             // Word & Character count label inside 40pt Capsule — ALWAYS VISIBLE
             HStack(spacing: 4) {
-                Text("\(wordCount) \(wordCount == 1 ? "word" : "words"), \(charCount) \(charCount == 1 ? "character" : "characters")")
+                Text("\(words) \(words == 1 ? "word" : "words"), \(chars) \(chars == 1 ? "character" : "characters")")
                     .font(.system(size: 13, weight: .medium, design: .default))
                     .foregroundStyle(taskTextColor.opacity(0.88))
             }
