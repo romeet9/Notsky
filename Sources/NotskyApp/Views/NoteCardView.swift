@@ -217,18 +217,7 @@ public struct NoteCardView: View {
 
             // 2. Foreground Content Sheet
             ZStack(alignment: .top) {
-                // Frosted Blurred Wallpaper Underlay
-                HeaderImageView(imagePath: note.headerImagePath)
-                    .frame(width: cardWidth, height: cardHeight)
-                    .offset(y: -headerHeight)
-                    .blur(radius: 35)
-                    .scaleEffect(1.12)
-                    .saturation(1.25)
-                    .contrast(1.05)
-                    .frame(width: cardWidth, height: sheetHeight)
-                    .clipped()
-
-                // Frosted Glass Tint & System Material
+                // Frosted Glass Tint & Hardware Accelerated Material
                 sheetBackgroundColor
                     .background(.ultraThinMaterial)
 

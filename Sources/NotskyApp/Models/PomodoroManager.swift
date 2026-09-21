@@ -12,7 +12,15 @@ public final class PomodoroManager: ObservableObject {
         }
     }
     @Published public var breakDurationMinutes: Int = 5
-    @Published public var isTimerRunning: Bool = false
+    @Published public var isTimerRunning: Bool = false {
+        didSet {
+            if isTimerRunning {
+                startTimer()
+            } else {
+                stopTimer()
+            }
+        }
+    }
     @Published public var timeRemaining: Int = 25 * 60
     
     @Published public var isSoundEnabled: Bool = true {
@@ -25,15 +33,22 @@ public final class PomodoroManager: ObservableObject {
         didSet { SensoryFeedback.hapticsEnabled = isHapticsEnabled }
     }
     
-    private var cancellables = Set<AnyCancellable>()
+    private var timerCancellable: AnyCancellable?
 
-    private init() {
-        Timer.publish(every: 1, on: .main, in: .common)
+    private init() {}
+
+    private func startTimer() {
+        stopTimer()
+        timerCancellable = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.tick()
             }
-            .store(in: &cancellables)
+    }
+
+    private func stopTimer() {
+        timerCancellable?.cancel()
+        timerCancellable = nil
     }
 
     public var timeString: String {
