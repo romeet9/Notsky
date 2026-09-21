@@ -499,9 +499,67 @@ public struct CardExportSnapshotView: View {
             )
             .shadow(color: Color.black.opacity(0.40), radius: 36, x: 0, y: 16)
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
+
+            // 3. Official Liquid-Glass Branding Watermark Pill
+            VStack {
+                Spacer()
+                HStack(spacing: 7.5) {
+                    if let icon = brandingIcon {
+                        Image(nsImage: icon)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 17, height: 17)
+                            .clipShape(RoundedRectangle(cornerRadius: 4.2, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4.2, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 0.5)
+                            )
+                            .shadow(color: Color.black.opacity(0.25), radius: 2.5, x: 0, y: 1)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.red)
+                    }
+                    
+                    HStack(spacing: 3.5) {
+                        Text("Downloaded with")
+                            .font(.system(size: 10.5, weight: .medium, design: .default))
+                            .foregroundStyle(isDark ? Color.white.opacity(0.70) : Color.black.opacity(0.65))
+                        
+                        Text("Notsky AI")
+                            .font(.system(size: 11, weight: .bold, design: .default))
+                            .foregroundStyle(isDark ? Color.white : Color.black)
+                    }
+                }
+                .padding(.horizontal, 13)
+                .padding(.vertical, 6.5)
+                .background(sheetBackgroundColor, in: Capsule())
+                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                .shadow(color: Color.black.opacity(isDark ? 0.22 : 0.12), radius: 10, x: 0, y: 4)
+                .padding(.bottom, 16)
+            }
         }
         .frame(width: canvasSize, height: canvasSize)
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+    }
+
+    private var brandingIcon: NSImage? {
+        let possiblePaths = [
+            Bundle.main.path(forResource: "AppIcon", ofType: "png"),
+            Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
+            "/Applications/Notsky.app/Contents/Resources/AppIcon.icns",
+            "/Users/romeet/.gemini/antigravity/scratch/NotskyApp/docs/screenshots/AppIcon.png",
+            Bundle.main.bundlePath + "/Contents/Resources/AppIcon.icns"
+        ]
+        for path in possiblePaths.compactMap({ $0 }) {
+            if FileManager.default.fileExists(atPath: path), let img = NSImage(contentsOfFile: path) {
+                return img
+            }
+        }
+        if let appIcon = NSApp.applicationIconImage, appIcon.isValid {
+            return appIcon
+        }
+        return nil
     }
 }
 
