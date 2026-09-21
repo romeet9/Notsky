@@ -428,6 +428,7 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func closeWidget(noteId: UUID) {
         if let controller = windowControllers[noteId] {
+            controller.window?.contentView = nil
             controller.window?.close()
             windowControllers.removeValue(forKey: noteId)
         }
@@ -457,6 +458,7 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func clearWorkspace() {
         for (_, controller) in windowControllers {
+            controller.window?.contentView = nil
             controller.window?.close()
         }
         windowControllers.removeAll()
@@ -563,10 +565,11 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
         )
         
         let card4Id = UUID()
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         let sampleFiles = [
-            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "/Users/romeet/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
-            FinderFileItem(name: "Design_System_Tokens.pdf", path: "/Users/romeet/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
-            FinderFileItem(name: "Notsky_Release_Notes.md", path: "/Users/romeet/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
+            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
+            FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
+            FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
         ]
         
         let card4 = NoteCard(

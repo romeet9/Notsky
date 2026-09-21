@@ -4,58 +4,96 @@ import Observation
 
 @Observable
 public final class NoteStore {
-    public var notes: [NoteCard] = []
+    public var notes: [NoteCard] = [] {
+        didSet {
+            scheduleAutoSave()
+        }
+    }
     
-    public static let defaultDemoNoteContent: String = """
-**Design & Strategy Notes**
+    private static var storageURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
+        let dir = appSupport.appendingPathComponent("Notsky", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("workspace_v1.json")
+    }
+    
+    private static var saveWorkItem: DispatchWorkItem?
+    
+    public func scheduleAutoSave() {
+        Self.saveWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            self?.saveToDisk()
+        }
+        Self.saveWorkItem = item
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.35, execute: item)
+    }
+    
+    public func saveToDisk() {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(notes)
+            try data.write(to: Self.storageURL, options: .atomic)
+        } catch {
+            print("Failed to persist Notsky workspace to disk: \(error)")
+        }
+    }
+    
+    public static func loadFromDisk() -> [NoteCard]? {
+        guard FileManager.default.fileExists(atPath: storageURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: storageURL)
+            let decoder = JSONDecoder()
+            let loaded = try decoder.decode([NoteCard].self, from: data)
+            return loaded.isEmpty ? nil : loaded
+        } catch {
+            print("Failed to load Notsky workspace from disk: \(error)")
+            return nil
+        }
+    }
 
-• **Visual Hierarchy**: Frosted glass depth with 3D specular light borders.
-• *Typography & Clarity*: Native bold, italic, and bullet lists.
-• *Focus Flow*: Minimal friction note-taking directly from your desktop.
+    public static var defaultDemoNoteContent: String {
+        """
+**Core Architecture Principles**
 
-*“Simplicity is about subtracting the obvious and adding the meaningful.”*
+• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
+
+• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
+
+• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
 """
+    }
 
-    public static let defaultDemoPages: [NotePage] = [
-        NotePage(
-            title: "Strategy",
-            content: """
-**Design & Strategy Notes**
-
-• **Visual Hierarchy**: Frosted glass depth with 3D specular light borders.
-• *Typography & Clarity*: Native bold, italic, and bullet lists.
-• *Focus Flow*: Minimal friction note-taking directly from your desktop.
-
-*“Simplicity is about subtracting the obvious and adding the meaningful.”*
-"""
-        ),
-        NotePage(
-            title: "Ideas",
-            content: """
+    public static var defaultDemoPages: [NotePage] {
+        let strategyContent = defaultDemoNoteContent
+        let ideasContent = """
 **Product Ideas & Brainstorming**
 
 • **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
-• *Trackpad Gestures*: Swipe smoothly between note tabs.
-• *Rich 4K Cards*: Instant wallpaper exports for sharing on social platforms.
-
-*“Creativity is thinking up new things. Innovation is doing new things.”*
+• **Trackpad Gestures**: Swipe smoothly between note tabs.
+• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
 """
-        ),
-        NotePage(
-            title: "Snippets",
-            content: """
+        let snippetsContent = """
 **Developer & Design Snippets**
 
 • `git commit -m "feat: multi-tab quick notes"`
 • `swift build -c release`
-• *Material Formula*: `.ultraThinMaterial` + `specularBorderGradient`
-
-*“Make it work, make it right, make it fast.”*
+• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
 """
-        )
-    ]
-
+        return [
+            NotePage(title: "Strategy", content: strategyContent),
+            NotePage(title: "Ideas", content: ideasContent),
+            NotePage(title: "Snippets", content: snippetsContent)
+        ]
+    }
+    
     public init() {
+        if let persisted = Self.loadFromDisk() {
+            self.notes = persisted
+            return
+        }
+        
         let packs = WallpaperPackManager.builtInPacks()
         let items = packs.first?.items ?? []
         
@@ -104,39 +142,11 @@ public final class NoteStore {
             isTimerRunning: true
         )
         
-        let strategyContent = """
-**Core Architecture Principles**
-
-• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
-
-• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
-
-• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
-"""
-        let ideasContent = """
-**Product Ideas & Brainstorming**
-
-• **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
-• **Trackpad Gestures**: Swipe smoothly between note tabs.
-• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
-"""
-        let snippetsContent = """
-**Developer & Design Snippets**
-
-• `git commit -m "feat: multi-tab quick notes"`
-• `swift build -c release`
-• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
-"""
-        
         let card3 = NoteCard(
             cardType: .notes,
             title: "Strategy & Notes",
-            noteContent: strategyContent,
-            pages: [
-                NotePage(title: "Strategy", content: strategyContent),
-                NotePage(title: "Ideas", content: ideasContent),
-                NotePage(title: "Snippets", content: snippetsContent)
-            ],
+            noteContent: Self.defaultDemoNoteContent,
+            pages: Self.defaultDemoPages,
             activePageIndex: 0,
             headerImagePath: w2,
             items: [],
@@ -146,10 +156,11 @@ public final class NoteStore {
             height: 364
         )
         
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         let sampleFiles = [
-            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "/Users/romeet/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
-            FinderFileItem(name: "Design_System_Tokens.pdf", path: "/Users/romeet/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
-            FinderFileItem(name: "Notsky_Release_Notes.md", path: "/Users/romeet/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
+            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
+            FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
+            FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
         ]
         
         let card4 = NoteCard(
@@ -169,6 +180,7 @@ public final class NoteStore {
         )
         
         self.notes = [card1, card2, card3, card4]
+        saveToDisk()
     }
     
     public func addNote() {

@@ -553,19 +553,21 @@ public struct CardImageExporter {
     
     /// Generates the extreme 4K PNG data (2400 × 2400 px) for the note card
     public static func render4KPNGData(note: NoteCard, isDark: Bool) -> (NSImage, Data)? {
-        _ = HeaderImageView.getImage(for: note.headerImagePath)
-        
-        let exportView = CardExportSnapshotView(note: note, isDark: isDark)
-        let renderer = ImageRenderer(content: exportView)
-        renderer.scale = 4.0 // 4K Extreme Master Resolution (2400 × 2400 px)
-        
-        guard let nsImage = renderer.nsImage,
-              let tiffData = nsImage.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return nil
+        autoreleasepool {
+            _ = HeaderImageView.getImage(for: note.headerImagePath)
+            
+            let exportView = CardExportSnapshotView(note: note, isDark: isDark)
+            let renderer = ImageRenderer(content: exportView)
+            renderer.scale = 4.0 // 4K Extreme Master Resolution (2400 × 2400 px)
+            
+            guard let nsImage = renderer.nsImage,
+                  let tiffData = nsImage.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                return nil
+            }
+            return (nsImage, pngData)
         }
-        return (nsImage, pngData)
     }
 
     /// Downloads the 4K image directly to ~/Downloads and reveals it in Finder

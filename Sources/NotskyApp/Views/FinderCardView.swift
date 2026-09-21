@@ -313,32 +313,7 @@ public struct FinderCardView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 95)
             }
-            .mask(
-                VStack(spacing: 0) {
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color.black.opacity(0.0), location: 0.0),
-                            .init(color: Color.black.opacity(1.0), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 22)
-
-                    Rectangle()
-                        .fill(Color.black)
-
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color.black.opacity(1.0), location: 0.0),
-                            .init(color: Color.black.opacity(0.0), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 44)
-                }
-            )
+            .contentEdgeFade(top: 22, bottom: 44)
             .onChange(of: note.chatMessages.count) {
                 if let lastId = note.chatMessages.last?.id {
                     withAnimation {

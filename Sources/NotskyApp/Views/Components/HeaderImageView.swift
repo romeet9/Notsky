@@ -6,7 +6,7 @@ public struct HeaderImageView: View {
     public var targetMaxPixelSize: CGFloat
     @State private var loadedImage: NSImage? = nil
     
-    public init(imagePath: String = "/Users/romeet/Downloads/red_distortion_2.heic", targetMaxPixelSize: CGFloat = 800) {
+    public init(imagePath: String = WallpaperPackManager.defaultFallbackPath, targetMaxPixelSize: CGFloat = 800) {
         self.imagePath = imagePath
         self.targetMaxPixelSize = targetMaxPixelSize
     }

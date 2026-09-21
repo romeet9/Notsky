@@ -629,32 +629,7 @@ public struct NoteCardView: View {
         }
         .frame(width: cardWidth)
         .frame(maxHeight: .infinity)
-        .mask(
-            VStack(spacing: 0) {
-                LinearGradient(
-                    stops: [
-                        .init(color: Color.black.opacity(0.0), location: 0.0),
-                        .init(color: Color.black.opacity(1.0), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 12)
-
-                Rectangle()
-                    .fill(Color.black)
-
-                LinearGradient(
-                    stops: [
-                        .init(color: Color.black.opacity(1.0), location: 0.0),
-                        .init(color: Color.black.opacity(0.0), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 16)
-            }
-        )
+        .contentEdgeFade(top: 12, bottom: 16)
     }
 
     @ViewBuilder

@@ -76,7 +76,7 @@ public final class WallpaperPackManager {
     public func nextWallpaperPath() -> String {
         let items = activePack.items
         guard !items.isEmpty else {
-            return "/Users/romeet/Downloads/red_distortion_2.heic"
+            return Self.defaultFallbackPath
         }
         
         let item = items[allocationIndex % items.count]
@@ -197,6 +197,19 @@ public final class WallpaperPackManager {
             }
         }
         return "/Users/romeet/.gemini/antigravity/scratch/NotskyApp/Resources/Wallpapers"
+    }
+    
+    public static var defaultFallbackPath: String {
+        let defaultFilename = "red_distortion_2.heic"
+        let standardPath = wallpaperPath(defaultFilename)
+        if FileManager.default.fileExists(atPath: standardPath) {
+            return standardPath
+        }
+        let userDownloads = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads/\(defaultFilename)").path
+        if FileManager.default.fileExists(atPath: userDownloads) {
+            return userDownloads
+        }
+        return standardPath
     }
     
     private static func wallpaperPath(_ filename: String) -> String {

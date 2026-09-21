@@ -116,7 +116,7 @@ public struct NoteCard: Identifiable, Codable, Equatable {
         noteContent: String = "",
         pages: [NotePage] = [],
         activePageIndex: Int = 0,
-        headerImagePath: String = "/Users/romeet/Downloads/red_distortion_2.heic",
+        headerImagePath: String = WallpaperPackManager.defaultFallbackPath,
         items: [NoteItem] = [],
         chatMessages: [ChatMessage] = [],
         gridCol: Int = 0,

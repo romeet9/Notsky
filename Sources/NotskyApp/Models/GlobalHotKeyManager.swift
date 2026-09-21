@@ -125,4 +125,27 @@ public final class GlobalHotKeyManager {
             isControlDown = false
         }
     }
+    
+    public func cleanup() {
+        if let monitor = globalFlagsMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalFlagsMonitor = nil
+        }
+        if let monitor = localFlagsMonitor {
+            NSEvent.removeMonitor(monitor)
+            localFlagsMonitor = nil
+        }
+        for ref in hotKeyRefs {
+            UnregisterEventHotKey(ref)
+        }
+        hotKeyRefs.removeAll()
+        if let handler = eventHandler {
+            RemoveEventHandler(handler)
+            eventHandler = nil
+        }
+    }
+    
+    deinit {
+        cleanup()
+    }
 }

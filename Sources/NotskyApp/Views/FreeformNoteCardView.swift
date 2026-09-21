@@ -893,6 +893,7 @@ public struct FreeformNoteCardView: View {
         }
         .frame(width: cardWidth)
         .frame(maxHeight: .infinity)
+        .contentEdgeFade(top: 10, bottom: 14)
     }
 
     private var canAddTab: Bool {

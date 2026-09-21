@@ -147,7 +147,7 @@ public final class AppSettings {
         self.appearanceMode = defaults.string(forKey: kAppearanceMode) ?? "System"
         self.interfaceScale = defaults.string(forKey: kInterfaceScale) ?? "Medium"
         self.backgroundOpacity = defaults.object(forKey: kBackgroundOpacity) == nil ? 0.85 : defaults.double(forKey: kBackgroundOpacity)
-        self.defaultWallpaper = defaults.string(forKey: kDefaultWallpaper) ?? WallpaperPackManager.builtInPacks().first?.items.first?.path ?? "/Users/romeet/Downloads/red_distortion_2.heic"
+        self.defaultWallpaper = defaults.string(forKey: kDefaultWallpaper) ?? WallpaperPackManager.builtInPacks().first?.items.first?.path ?? WallpaperPackManager.defaultFallbackPath
         self.autoPauseTimers = defaults.object(forKey: kAutoPauseTimers) == nil ? true : defaults.bool(forKey: kAutoPauseTimers)
         self.autoHideControls = defaults.object(forKey: kAutoHideControls) == nil ? true : defaults.bool(forKey: kAutoHideControls)
         

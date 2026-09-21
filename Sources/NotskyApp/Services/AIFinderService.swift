@@ -12,10 +12,20 @@ public final class AIFinderService: @unchecked Sendable {
     
     public var apiKey: String {
         get {
-            UserDefaults.standard.string(forKey: "notsky_openrouter_api_key") ?? ""
+            if let secureKey = KeychainHelper.shared.string(forKey: "notsky_openrouter_api_key"), !secureKey.isEmpty {
+                return secureKey
+            }
+            // One-time migration from legacy UserDefaults
+            if let legacyKey = UserDefaults.standard.string(forKey: "notsky_openrouter_api_key"), !legacyKey.isEmpty {
+                KeychainHelper.shared.setString(legacyKey, forKey: "notsky_openrouter_api_key")
+                UserDefaults.standard.removeObject(forKey: "notsky_openrouter_api_key")
+                return legacyKey
+            }
+            return ""
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "notsky_openrouter_api_key")
+            KeychainHelper.shared.setString(newValue, forKey: "notsky_openrouter_api_key")
+            UserDefaults.standard.removeObject(forKey: "notsky_openrouter_api_key")
         }
     }
     
