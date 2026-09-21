@@ -500,43 +500,28 @@ public struct CardExportSnapshotView: View {
             .shadow(color: Color.black.opacity(0.40), radius: 36, x: 0, y: 16)
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
 
-            // 3. Official Liquid-Glass Branding Watermark Pill
+            // 3. Top-Right Corner Branding Logo (Icon Only, No Text, No Background Border)
             VStack {
-                Spacer()
-                HStack(spacing: 7.5) {
+                HStack {
+                    Spacer()
                     if let icon = brandingIcon {
                         Image(nsImage: icon)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 17, height: 17)
-                            .clipShape(RoundedRectangle(cornerRadius: 4.2, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4.2, style: .continuous)
-                                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 0.5)
-                            )
-                            .shadow(color: Color.black.opacity(0.25), radius: 2.5, x: 0, y: 1)
+                            .frame(width: 28, height: 28)
+                            .clipShape(RoundedRectangle(cornerRadius: 6.8, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 1.5)
                     } else {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(Color.red)
-                    }
-                    
-                    HStack(spacing: 3.5) {
-                        Text("Downloaded with")
-                            .font(.system(size: 10.5, weight: .medium, design: .default))
-                            .foregroundStyle(isDark ? Color.white.opacity(0.70) : Color.black.opacity(0.65))
-                        
-                        Text("Notsky AI")
-                            .font(.system(size: 11, weight: .bold, design: .default))
-                            .foregroundStyle(isDark ? Color.white : Color.black)
+                            .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 1.5)
                     }
                 }
-                .padding(.horizontal, 13)
-                .padding(.vertical, 6.5)
-                .background(sheetBackgroundColor, in: Capsule())
-                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                .shadow(color: Color.black.opacity(isDark ? 0.22 : 0.12), radius: 10, x: 0, y: 4)
-                .padding(.bottom, 16)
+                .padding(.top, 18)
+                .padding(.trailing, 18)
+                
+                Spacer()
             }
         }
         .frame(width: canvasSize, height: canvasSize)
