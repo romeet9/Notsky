@@ -127,5 +127,5 @@ Designed and built by **Romeet Chatterjee**
 ---
 
 <div align="center">
-  <sub>Released under the MIT License. Designed for macOS.</sub>
+  <sub>© 2026 Romeet Chatterjee. All rights reserved. Source-available for personal evaluation. Commercial redistribution, reselling, or unauthorized republishing is strictly prohibited.</sub>
 </div>

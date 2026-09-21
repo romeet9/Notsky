@@ -1,21 +1,53 @@
-MIT License
+Notsky Source-Available Proprietary License
+Copyright (c) 2026 Romeet Chatterjee. All rights reserved.
 
-Copyright (c) 2026 Romeet Chatterjee
+==============================================================================
+TERMS AND CONDITIONS FOR ACCESS, USE, REPRODUCTION, AND RESTRICTIONS
+==============================================================================
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. GRANT OF LIMITED EVALUATION LICENSE
+Subject to the terms and conditions of this Agreement, the Author (Romeet Chatterjee) 
+hereby grants to any individual viewing this repository a non-exclusive, non-transferable, 
+revocable, limited license to:
+  (a) View, read, and inspect the source code for personal, educational, and audit purposes;
+  (b) Compile and run the software locally on their personal hardware strictly for personal,
+      non-commercial evaluation.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. STRICT COMMERCIAL & REDISTRIBUTION PROHIBITIONS
+Except as explicitly authorized in Section 1, YOU ARE STRICTLY PROHIBITED FROM:
+  (a) Selling, leasing, licensing, sublicensing, charging fees for, or otherwise commercially
+      exploiting the Software, its source code, designs, or compiled binaries in any form;
+  (b) Republishing, redistributing, hosting mirrors of, or offering the Software (or any
+      derivative works) as a service (SaaS), paid application, or downloadable product;
+  (c) Publishing, listing, or distributing compiled binaries or builds of the Software to any
+      app store, marketplace, package manager (e.g., Mac App Store, Homebrew, Setapp,
+      Gumroad, Lemon Squeezy, etc.) without prior written consent from Romeet Chatterjee;
+  (d) Creating derivative works, clones, or rebranding of the Software for public distribution
+      or commercial purposes ("white-labeling" or "re-skinning");
+  (e) Removing, altering, or obscuring any copyright notices, author attributions, logos,
+      or proprietary markings within the source code or binary outputs.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. TRADEMARKS & INTELLECTUAL PROPERTY
+All title, ownership rights, intellectual property rights, and trademarks (including but
+not limited to "Notsky", "notskyai", user interface designs, visual layouts, and logos)
+remain exclusively with Romeet Chatterjee. This License does not grant any rights to use
+the trademarks, trade names, or brand identity of the Author.
+
+4. TERMINATION
+Any breach of the terms of this Agreement automatically and immediately terminates your
+license and permissions under this Agreement. Upon termination, you must destroy all copies
+of the Software in your possession.
+
+5. DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE
+LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+==============================================================================
+For commercial licensing, enterprise inquiries, or distribution permissions:
+Contact: Romeet Chatterjee <chatterjeeromeet9@gmail.com>
+Portfolio: https://romeet-portfolio.vercel.app
+==============================================================================
