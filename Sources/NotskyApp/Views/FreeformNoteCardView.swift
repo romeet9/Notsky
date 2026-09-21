@@ -323,6 +323,9 @@ public struct FreeformNoteCardView: View {
     @State private var dragInitialWidth: Double? = nil
     @State private var dragInitialHeight: Double? = nil
     
+    // Directional slide animation state for tabs
+    @State private var slideDirection: Edge = .trailing
+    
     private var showControls: Bool {
         !settings.autoHideControls || isHoveringCard
     }
@@ -476,6 +479,11 @@ public struct FreeformNoteCardView: View {
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)
             )
             .offset(y: headerHeight)
+            .id("tab_sheet_\(note.id)_\(note.activePageIndex)")
+            .transition(.asymmetric(
+                insertion: .move(edge: slideDirection == .trailing ? .trailing : .leading).combined(with: .opacity),
+                removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
+            ))
             .zIndex(1)
 
             // 3. Top Title Tab Bar (Tabs + Plus Button) — Centered horizontally
@@ -599,7 +607,9 @@ public struct FreeformNoteCardView: View {
                                 }
                             } else {
                                 isEditingTabIndex = nil
-                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                let newDirection: Edge = (index > note.activePageIndex) ? .trailing : .leading
+                                self.slideDirection = newDirection
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
                                     note.activePageIndex = index
                                 }
                             }
@@ -960,7 +970,8 @@ public struct FreeformNoteCardView: View {
         let nextIndex = note.pages.count + 1
         let title = "Note \(nextIndex)"
         let newPage = NotePage(title: title, content: "")
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+        self.slideDirection = .trailing
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
             note.pages.append(newPage)
             note.activePageIndex = note.pages.count - 1
             isEditingTabIndex = nil
@@ -971,7 +982,8 @@ public struct FreeformNoteCardView: View {
     private func deleteTab(at index: Int) {
         ensurePagesInitialized()
         guard note.pages.count > 1, note.pages.indices.contains(index) else { return }
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+        self.slideDirection = .leading
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.84, blendDuration: 0.10)) {
             note.pages.remove(at: index)
             if note.activePageIndex >= note.pages.count {
                 note.activePageIndex = max(0, note.pages.count - 1)
