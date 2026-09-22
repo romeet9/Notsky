@@ -26,9 +26,9 @@ jobs:
         run: |
           swift build -c release
 
-      - name: Package Notsky.app Bundle & Zip
+      - name: Package Notsky.app Bundle, DMG & Zip
         run: |
-          VERSION="${GITHUB_REF_NAME:-v1.0.2}"
+          VERSION="${GITHUB_REF_NAME:-v1.0.3}"
           echo "Packaging release for version: ${VERSION}"
           
           mkdir -p Notsky.app/Contents/{MacOS,Resources}
@@ -39,6 +39,18 @@ jobs:
           cp Resources/MenuBarIcon*.png Notsky.app/Contents/Resources/ 2>/dev/null || true
           cp -R Resources/Wallpapers/ Notsky.app/Contents/Resources/Wallpapers/ 2>/dev/null || true
           cp Resources/Info.plist Notsky.app/Contents/Info.plist
+          
+          # Ad-hoc sign bundle
+          codesign --force --deep --sign - Notsky.app
+          
+          # Create DMG staging directory with Applications shortcut
+          mkdir -p dmg_staging
+          cp -R Notsky.app dmg_staging/
+          ln -s /Applications dmg_staging/Applications
+          
+          # Build compressed DMG installer
+          hdiutil create -volname "Notsky" -srcfolder dmg_staging -ov -format UDZO "Notsky-${VERSION}-macOS.dmg"
+          rm -rf dmg_staging
           
           # Create zip archive
           zip -r -y "Notsky-${VERSION}-macOS.zip" Notsky.app
@@ -52,6 +64,7 @@ jobs:
           prerelease: false
           body_path: CHANGELOG.md
           files: |
+            Notsky-*-macOS.dmg
             Notsky-*-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
