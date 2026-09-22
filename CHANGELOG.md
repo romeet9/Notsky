@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.7] - 2026-09-23
+
+### What's Changed
+- **Fixed Wallpaper Pack Switching Stability**: Resolved a crash when switching packs or applying wallpapers across all cards by making luminance and accent color sampling fully thread-safe and non-blocking with `CGBitmapContext`.
+- **Asynchronous Image Previews**: Settings thumbnail rendering and card headers now load smoothly in the background without main-thread UI hitches.
+
 ## [1.0.6] - 2026-09-23
 
 ### What's Changed

@@ -50,7 +50,7 @@ public struct HeaderImageView: View {
             }
             
             // Loaded Downsampled File Image (HEIC, PNG, JPG)
-            if let image = loadedImage ?? ImageDownsampler.shared.downsample(path: imagePath, targetMaxPixelSize: targetMaxPixelSize) {
+            if let image = loadedImage {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)

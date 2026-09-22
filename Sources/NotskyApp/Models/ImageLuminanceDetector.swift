@@ -1,55 +1,59 @@
 import SwiftUI
 import AppKit
-import CoreImage
+import CoreGraphics
 
 public enum ImageLuminanceDetector {
-    private static let context = CIContext(options: [.workingColorSpace: NSNull()])
-    private static var cache: [String: Bool] = [:]
-    private static var colorCache: [String: Color] = [:]
+    // Thread-safe caches
+    private static let luminanceCache = NSCache<NSString, NSNumber>()
+    private static let colorCache = NSCache<NSString, NSColor>()
     
     public static func isLightImage(at path: String) -> Bool {
-        if let cached = cache[path] {
-            return cached
+        guard !path.isEmpty else { return false }
+        
+        let nsKey = path as NSString
+        if let cached = luminanceCache.object(forKey: nsKey) {
+            return cached.boolValue
         }
         
         // Check wallpaper pack preset
         if let preset = WallpaperPackManager.shared.item(for: path) {
             let isLight = preset.gradientColors.first.map { isLightColor($0) } ?? false
-            cache[path] = isLight
+            luminanceCache.setObject(NSNumber(value: isLight), forKey: nsKey)
             return isLight
         }
         
         guard let cgImage = ImageDownsampler.shared.sampleCGImage(path: path, targetMaxPixelSize: 64) else {
-            cache[path] = false
+            luminanceCache.setObject(NSNumber(value: false), forKey: nsKey)
             return false
         }
         
-        let ciImage = CIImage(cgImage: cgImage)
-        let extent = ciImage.extent
-        let topCropRect = CGRect(
-            x: 0,
-            y: extent.height * 0.65,
-            width: extent.width,
-            height: extent.height * 0.35
-        )
-        
-        guard let filter = CIFilter(name: "CIAreaAverage", parameters: [
-            kCIInputImageKey: ciImage,
-            kCIInputExtentKey: CIVector(cgRect: topCropRect)
-        ]), let outputImage = filter.outputImage else {
-            cache[path] = false
-            return false
-        }
-        
+        // Sample top 35% where card header text sits
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
         var pixel = [UInt8](repeating: 0, count: 4)
-        context.render(
-            outputImage,
-            toBitmap: &pixel,
-            rowBytes: 4,
-            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-            format: .RGBA8,
-            colorSpace: nil
-        )
+        
+        guard let context = CGContext(
+            data: &pixel,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            luminanceCache.setObject(NSNumber(value: false), forKey: nsKey)
+            return false
+        }
+        
+        context.interpolationQuality = .medium
+        let topHeight = CGFloat(cgImage.height) * 0.35
+        let topY = CGFloat(cgImage.height) * 0.65
+        let cropRect = CGRect(x: 0, y: topY, width: CGFloat(cgImage.width), height: topHeight)
+        
+        if let cropped = cgImage.cropping(to: cropRect) {
+            context.draw(cropped, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        } else {
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        }
         
         let r = Double(pixel[0]) / 255.0
         let g = Double(pixel[1]) / 255.0
@@ -57,72 +61,77 @@ public enum ImageLuminanceDetector {
         
         let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
         let isLight = luminance > 0.55
-        cache[path] = isLight
+        
+        luminanceCache.setObject(NSNumber(value: isLight), forKey: nsKey)
         return isLight
     }
 
     public static func dominantAccentColor(at path: String) -> Color {
-        if let cached = colorCache[path] {
-            return cached
+        guard !path.isEmpty else {
+            return Color(hue: 0.98, saturation: 0.85, brightness: 0.98)
+        }
+        
+        let nsKey = path as NSString
+        if let cached = colorCache.object(forKey: nsKey) {
+            return Color(nsColor: cached)
         }
         
         // Check wallpaper pack preset
         if let preset = WallpaperPackManager.shared.item(for: path) {
             let color = Color(hue: preset.accentHue, saturation: 0.85, brightness: 0.98)
-            colorCache[path] = color
+            let nsColor = NSColor(color)
+            colorCache.setObject(nsColor, forKey: nsKey)
             return color
         }
         
         guard let cgImage = ImageDownsampler.shared.sampleCGImage(path: path, targetMaxPixelSize: 64) else {
-            let fallback = Color(hue: 0.98, saturation: 0.85, brightness: 0.98) // Bright vibrant coral/pink
-            colorCache[path] = fallback
-            return fallback
+            let fallback = NSColor(hue: 0.98, saturation: 0.85, brightness: 0.98, alpha: 1.0)
+            colorCache.setObject(fallback, forKey: nsKey)
+            return Color(nsColor: fallback)
         }
         
-        let ciImage = CIImage(cgImage: cgImage)
-        let extent = ciImage.extent
-        guard let filter = CIFilter(name: "CIAreaAverage", parameters: [
-            kCIInputImageKey: ciImage,
-            kCIInputExtentKey: CIVector(cgRect: extent)
-        ]), let outputImage = filter.outputImage else {
-            let fallback = Color(hue: 0.98, saturation: 0.85, brightness: 0.98)
-            return fallback
-        }
-        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
         var pixel = [UInt8](repeating: 0, count: 4)
-        context.render(
-            outputImage,
-            toBitmap: &pixel,
-            rowBytes: 4,
-            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-            format: .RGBA8,
-            colorSpace: CGColorSpaceCreateDeviceRGB()
-        )
         
-        let r = Double(pixel[0]) / 255.0
-        let g = Double(pixel[1]) / 255.0
-        let b = Double(pixel[2]) / 255.0
+        guard let context = CGContext(
+            data: &pixel,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            let fallback = NSColor(hue: 0.98, saturation: 0.85, brightness: 0.98, alpha: 1.0)
+            colorCache.setObject(fallback, forKey: nsKey)
+            return Color(nsColor: fallback)
+        }
         
-        let nsColor = NSColor(srgbRed: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: 1.0)
+        context.interpolationQuality = .medium
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        
+        let r = CGFloat(pixel[0]) / 255.0
+        let g = CGFloat(pixel[1]) / 255.0
+        let b = CGFloat(pixel[2]) / 255.0
+        
+        let sampleColor = NSColor(srgbRed: r, green: g, blue: b, alpha: 1.0)
         var hue: CGFloat = 0
         var saturation: CGFloat = 0
         var brightness: CGFloat = 0
         var alpha: CGFloat = 0
-        nsColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        sampleColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
         
-        let finalColor: Color
+        let finalNSColor: NSColor
         if saturation < 0.10 {
-            // Low saturation / dark or monochrome image: use a bright, vibrant electric coral-amber
-            finalColor = Color(hue: 0.08, saturation: 0.88, brightness: 0.98)
+            finalNSColor = NSColor(hue: 0.08, saturation: 0.88, brightness: 0.98, alpha: 1.0)
         } else {
-            // Boost brightness to the bright side (0.92 - 0.98) and ensure vivid saturation (0.75 - 0.95)
-            let brightSaturation = min(max(Double(saturation) * 1.35, 0.75), 0.95)
-            let highBrightness = min(max(Double(brightness) * 1.6, 0.92), 0.99)
-            finalColor = Color(hue: Double(hue), saturation: brightSaturation, brightness: highBrightness)
+            let brightSaturation = min(max(saturation * 1.35, 0.75), 0.95)
+            let highBrightness = min(max(brightness * 1.6, 0.92), 0.99)
+            finalNSColor = NSColor(hue: hue, saturation: brightSaturation, brightness: highBrightness, alpha: 1.0)
         }
         
-        colorCache[path] = finalColor
-        return finalColor
+        colorCache.setObject(finalNSColor, forKey: nsKey)
+        return Color(nsColor: finalNSColor)
     }
     
     private static func isLightColor(_ color: Color) -> Bool {

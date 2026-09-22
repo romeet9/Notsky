@@ -25,7 +25,13 @@ public final class ImageDownsampler {
             return cached
         }
         
-        let cleanPath = path.hasPrefix("file://") ? (URL(string: path)?.path ?? path) : path
+        var cleanPath = path
+        if cleanPath.hasPrefix("file://") {
+            cleanPath = URL(string: cleanPath)?.path ?? cleanPath.replacingOccurrences(of: "file://", with: "")
+        }
+        if let decoded = cleanPath.removingPercentEncoding, FileManager.default.fileExists(atPath: decoded) {
+            cleanPath = decoded
+        }
         guard FileManager.default.fileExists(atPath: cleanPath) else {
             return nil
         }
@@ -64,7 +70,13 @@ public final class ImageDownsampler {
             return nil
         }
         
-        let cleanPath = path.hasPrefix("file://") ? (URL(string: path)?.path ?? path) : path
+        var cleanPath = path
+        if cleanPath.hasPrefix("file://") {
+            cleanPath = URL(string: cleanPath)?.path ?? cleanPath.replacingOccurrences(of: "file://", with: "")
+        }
+        if let decoded = cleanPath.removingPercentEncoding, FileManager.default.fileExists(atPath: decoded) {
+            cleanPath = decoded
+        }
         guard FileManager.default.fileExists(atPath: cleanPath) else {
             return nil
         }
