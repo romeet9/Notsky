@@ -1,13 +1,13 @@
 # Changelog
 
-## [1.0.4] - 2026-09-23
+## [1.0.5] - 2026-09-23
 
 ### What's Changed
-- **97% Size Reduction (17 MB)**: Cleaned unused high-resolution assets and optimized bundled Raycast wallpapers for Retina displays, shrinking the installer from 475 MB down to ~17 MB.
-- **DMG Installer with Drag & Drop**: Included packaged `.dmg` disk image with `/Applications` folder shortcut for simple installation.
-- **macOS Gatekeeper Compatibility**: Cleaned ad-hoc code signature across all bundle frameworks.
+- **Demo Data Off by Default**: Clean workspace on initial launch with 4 blank default cards (2 task groups, 1 note card, 1 AI Finder card).
+- **In-Place Demo Data Toggle**: Turn on at any time in Settings → General to preview sample tasks, strategy notes, and search queries, or turn off to return to a clean slate.
+- **Lightweight 17 MB DMG Installer**: Packaged `.dmg` disk image with drag-and-drop `/Applications` shortcut.
 - **Native macOS Settings Architecture**: AppKit `NSSplitViewController` + unified `NSToolbar` with `sidebarTrackingSeparator`.
-- **In-Place Demo Data Reset**: Toggle in Settings → General populates or resets sample content across desktop cards without closing windows.
+- **Stability Fixes**: Disabled automatic AppKit termination so background widgets stay persistent on your desktop.
 
 ---
 

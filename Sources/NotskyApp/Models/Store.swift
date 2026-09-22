@@ -104,15 +104,9 @@ public final class NoteStore {
         
         let card1 = NoteCard(
             cardType: .tasks,
-            title: "Design Iterations",
+            title: "Tasks",
             headerImagePath: w0,
-            items: [
-                NoteItem(text: "Explore liquid-glass refraction shaders", isCompleted: true),
-                NoteItem(text: "Refine superellipse continuous corners (40pt)", isCompleted: true),
-                NoteItem(text: "Tune dynamic wallpaper luminance tinting", isCompleted: true),
-                NoteItem(text: "Test multi-monitor cursor magnetic snapping", isCompleted: false),
-                NoteItem(text: "Polish over-dock slide shelf animations", isCompleted: false)
-            ],
+            items: [],
             gridCol: 0,
             gridRow: 0,
             width: 281,
@@ -124,29 +118,23 @@ public final class NoteStore {
         
         let card2 = NoteCard(
             cardType: .tasks,
-            title: "Launch Checklist",
+            title: "Tasks",
             headerImagePath: w1,
-            items: [
-                NoteItem(text: "Finalize macOS AppIcon & Dock integration", isCompleted: true),
-                NoteItem(text: "Verify template menu bar icon optical height", isCompleted: true),
-                NoteItem(text: "Test slide-up drawer over sticky dock", isCompleted: true),
-                NoteItem(text: "Render 4K UI widget showcase mockups", isCompleted: true),
-                NoteItem(text: "Ship v1.0.0 release build to GitHub", isCompleted: false)
-            ],
+            items: [],
             gridCol: 1,
             gridRow: 0,
             width: 281,
             height: 364,
             timerDuration: 25 * 60,
-            timeRemaining: 18 * 60 + 42,
-            isTimerRunning: true
+            timeRemaining: 25 * 60,
+            isTimerRunning: false
         )
         
         let card3 = NoteCard(
             cardType: .notes,
-            title: "Strategy & Notes",
-            noteContent: Self.defaultDemoNoteContent,
-            pages: Self.defaultDemoPages,
+            title: "Notes",
+            noteContent: "",
+            pages: [NotePage(title: "Untitled", content: "")],
             activePageIndex: 0,
             headerImagePath: w2,
             items: [],
@@ -156,23 +144,13 @@ public final class NoteStore {
             height: 364
         )
         
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let sampleFiles = [
-            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
-            FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
-            FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
-        ]
-        
         let card4 = NoteCard(
             cardType: .finder,
             title: "notskyai",
             noteContent: "",
             headerImagePath: w3,
             items: [],
-            chatMessages: [
-                ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
-                ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
-            ],
+            chatMessages: [],
             gridCol: 2,
             gridRow: 0,
             width: 586,
