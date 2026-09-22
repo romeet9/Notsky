@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.8] - 2026-09-23
+
+### What's Changed
+- **New Wallpaper Pack: MacBook Neo Stock**: Added the official 5K MacBook Neo stock wallpapers (Sapphire Orange, Emerald Amber, Ruby Indigo, Violet Gold).
+- **Recursive Wallpaper Seed Engine**: Automatic seeding for multi-folder wallpaper pack structures in `Application Support`.
+
 ## [1.0.7] - 2026-09-23
 
 ### What's Changed

@@ -199,15 +199,21 @@ public final class WallpaperPackManager {
         
         for source in candidateSources {
             if FileManager.default.fileExists(atPath: source) {
-                if let files = try? FileManager.default.contentsOfDirectory(atPath: source) {
-                    for file in files {
-                        let srcPath = (source as NSString).appendingPathComponent(file)
-                        let dstPath = appSupportURL.appendingPathComponent(file).path
-                        if !FileManager.default.fileExists(atPath: dstPath) {
-                            try? FileManager.default.copyItem(atPath: srcPath, toPath: dstPath)
-                        }
-                    }
-                }
+                copyDirectoryContents(from: URL(fileURLWithPath: source), to: appSupportURL)
+            }
+        }
+    }
+    
+    private static func copyDirectoryContents(from srcDir: URL, to dstDir: URL) {
+        try? FileManager.default.createDirectory(at: dstDir, withIntermediateDirectories: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(at: srcDir, includingPropertiesForKeys: [.isDirectoryKey]) else { return }
+        for file in files {
+            let isDir = (try? file.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            let targetURL = dstDir.appendingPathComponent(file.lastPathComponent)
+            if isDir {
+                copyDirectoryContents(from: file, to: targetURL)
+            } else if !FileManager.default.fileExists(atPath: targetURL.path) {
+                try? FileManager.default.copyItem(at: file, to: targetURL)
             }
         }
     }
@@ -482,6 +488,43 @@ public final class WallpaperPackManager {
                         path: wallpaperPath("art/ARTWORK-nighthawk.jpg"),
                         gradientColors: [Color(red: 0.18, green: 0.35, blue: 0.32), Color(red: 0.08, green: 0.14, blue: 0.16)],
                         accentHue: 0.46
+                    )
+                ]
+            ),
+            
+            // Pack: MacBook Neo Stock Wallpapers
+            WallpaperPack(
+                id: "macbook_neo",
+                name: "MacBook Neo Stock",
+                description: "Official 5K MacBook Neo stock wallpapers with vibrant dynamic ribbons and fluid hues.",
+                items: [
+                    WallpaperItem(
+                        id: "macbook_neo_1",
+                        name: "MacBook Neo Sapphire Orange",
+                        path: wallpaperPath("neo/macbook_neo_1.jpg"),
+                        gradientColors: [Color(red: 0.15, green: 0.40, blue: 0.85), Color(red: 0.95, green: 0.45, blue: 0.20)],
+                        accentHue: 0.58
+                    ),
+                    WallpaperItem(
+                        id: "macbook_neo_2",
+                        name: "MacBook Neo Emerald Amber",
+                        path: wallpaperPath("neo/macbook_neo_2.jpg"),
+                        gradientColors: [Color(red: 0.10, green: 0.65, blue: 0.55), Color(red: 0.95, green: 0.60, blue: 0.20)],
+                        accentHue: 0.45
+                    ),
+                    WallpaperItem(
+                        id: "macbook_neo_3",
+                        name: "MacBook Neo Ruby Indigo",
+                        path: wallpaperPath("neo/macbook_neo_3.jpg"),
+                        gradientColors: [Color(red: 0.85, green: 0.20, blue: 0.45), Color(red: 0.30, green: 0.20, blue: 0.75)],
+                        accentHue: 0.94
+                    ),
+                    WallpaperItem(
+                        id: "macbook_neo_4",
+                        name: "MacBook Neo Violet Gold",
+                        path: wallpaperPath("neo/macbook_neo_4.jpg"),
+                        gradientColors: [Color(red: 0.60, green: 0.25, blue: 0.85), Color(red: 0.95, green: 0.70, blue: 0.25)],
+                        accentHue: 0.78
                     )
                 ]
             )
