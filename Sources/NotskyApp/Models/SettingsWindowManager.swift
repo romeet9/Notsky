@@ -70,9 +70,6 @@ public final class SettingsWindowManager: NSObject, ObservableObject, NSWindowDe
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         toolbar.allowsUserCustomization = false
-        if #available(macOS 15.0, *) {
-            toolbar.allowsDisplayModeCustomization = false
-        }
         win.toolbar = toolbar
         
         win.contentViewController = splitVC
