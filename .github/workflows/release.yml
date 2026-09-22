@@ -28,15 +28,16 @@ jobs:
 
       - name: Package Notsky.app Bundle & Zip
         run: |
-          VERSION="${GITHUB_REF_NAME:-v1.0.0}"
+          VERSION="${GITHUB_REF_NAME:-v1.0.2}"
           echo "Packaging release for version: ${VERSION}"
           
           mkdir -p Notsky.app/Contents/{MacOS,Resources}
           cp .build/release/NotskyApp Notsky.app/Contents/MacOS/Notsky
           chmod +x Notsky.app/Contents/MacOS/Notsky
           
-          cp Resources/AppIcon.icns Notsky.app/Contents/Resources/
-          cp Resources/MenuBarIcon*.png Notsky.app/Contents/Resources/ || true
+          cp Resources/AppIcon.icns Notsky.app/Contents/Resources/ 2>/dev/null || true
+          cp Resources/MenuBarIcon*.png Notsky.app/Contents/Resources/ 2>/dev/null || true
+          cp -R Resources/Wallpapers/ Notsky.app/Contents/Resources/Wallpapers/ 2>/dev/null || true
           cp Resources/Info.plist Notsky.app/Contents/Info.plist
           
           # Create zip archive
@@ -49,7 +50,7 @@ jobs:
           name: "Notsky ${{ github.ref_name }}"
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body_path: CHANGELOG.md
           files: |
             Notsky-*-macOS.zip
         env:

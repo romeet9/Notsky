@@ -20,8 +20,8 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
     
     public var icon: String {
         switch self {
-        case .general: return "slider.horizontal.3"
-        case .sensory: return "waveform"
+        case .general: return "gearshape"
+        case .sensory: return "speaker.wave.2"
         case .widgets: return "square.grid.2x2"
         case .appearance: return "paintpalette"
         case .focusTimer: return "timer"
@@ -32,89 +32,83 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
-@MainActor
-public struct SettingsView: View {
-    @Binding public var selectedItem: SettingsSidebarItem
+// MARK: - Native macOS Settings Sidebar View
+public struct SettingsSidebarView: View {
+    @ObservedObject private var manager = SettingsWindowManager.shared
     @State private var searchText: String = ""
+    
+    public init() {}
+    
+    public var body: some View {
+        List(selection: $manager.currentItem) {
+            Section("General") {
+                sidebarRow(for: .general)
+                sidebarRow(for: .sensory)
+            }
+            
+            Section("Widgets") {
+                sidebarRow(for: .widgets)
+                sidebarRow(for: .appearance)
+            }
+            
+            Section("Features") {
+                sidebarRow(for: .focusTimer)
+                sidebarRow(for: .exportSharing)
+                sidebarRow(for: .shortcuts)
+                sidebarRow(for: .about)
+            }
+        }
+        .listStyle(.sidebar)
+        .searchable(text: $searchText, placement: .sidebar, prompt: "Search")
+    }
+    
+    @ViewBuilder
+    private func sidebarRow(for item: SettingsSidebarItem) -> some View {
+        if searchText.isEmpty || item.rawValue.localizedCaseInsensitiveContains(searchText) {
+            Label(item.rawValue, systemImage: item.icon)
+                .tag(item)
+        }
+    }
+}
+
+// MARK: - Native macOS Settings Detail View
+@MainActor
+public struct SettingsDetailView: View {
+    @ObservedObject private var manager = SettingsWindowManager.shared
     @Bindable private var settings = AppSettings.shared
     @ObservedObject private var pomodoro = PomodoroManager.shared
     private var packManager = WallpaperPackManager.shared
     
-    public init(selectedItem: Binding<SettingsSidebarItem>) {
-        self._selectedItem = selectedItem
-    }
+    public init() {}
     
     public var body: some View {
-        NavigationSplitView {
-            List(selection: $selectedItem) {
-                Section("General") {
-                    sidebarRow(for: .general)
-                    sidebarRow(for: .sensory)
-                }
-                
-                Section("Widgets") {
-                    sidebarRow(for: .widgets)
-                    sidebarRow(for: .appearance)
-                }
-                
-                Section("Features") {
-                    sidebarRow(for: .focusTimer)
-                    sidebarRow(for: .exportSharing)
-                    sidebarRow(for: .shortcuts)
-                    sidebarRow(for: .about)
-                }
-            }
-            .listStyle(.sidebar)
-            .searchable(text: $searchText, placement: .sidebar, prompt: "Search")
-            .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 240)
-        } detail: {
-            Form {
-                switch selectedItem {
-                case .general:
-                    generalForm
-                case .sensory:
-                    sensoryForm
-                case .widgets:
-                    widgetsForm
-                case .appearance:
-                    appearanceForm
-                case .focusTimer:
-                    focusTimerForm
-                case .exportSharing:
-                    exportSharingForm
-                case .shortcuts:
-                    shortcutsForm
-                case .about:
-                    aboutForm
-                }
-            }
-            .formStyle(.grouped)
-            .padding(.top, -30)
-        }
-        .frame(minWidth: 840, minHeight: 600)
-        .frame(width: 920, height: 680)
-        .preferredColorScheme(settings.preferredColorScheme)
-    }
-    
-    // MARK: - Sidebar Row
-    @ViewBuilder
-    private func sidebarRow(for item: SettingsSidebarItem) -> some View {
-        if searchText.isEmpty || item.rawValue.localizedCaseInsensitiveContains(searchText) {
-            NavigationLink(value: item) {
-                Label(item.rawValue, systemImage: item.icon)
+        Form {
+            switch manager.currentItem {
+            case .general:
+                generalForm
+            case .sensory:
+                sensoryForm
+            case .widgets:
+                widgetsForm
+            case .appearance:
+                appearanceForm
+            case .focusTimer:
+                focusTimerForm
+            case .exportSharing:
+                exportSharingForm
+            case .shortcuts:
+                shortcutsForm
+            case .about:
+                aboutForm
             }
         }
+        .formStyle(.grouped)
     }
     
     // MARK: - 1. General Form
     @ViewBuilder
     private var generalForm: some View {
         Section("Startup & Visibility") {
-            Toggle(isOn: $settings.showInDock) {
-                Text("Show in macOS Dock")
-                Text("Keep the Notsky icon in the Dock and Command-Tab application switcher.")
-            }
-            
             Toggle(isOn: $settings.launchAtLogin) {
                 Text("Launch at login")
                 Text("Start Notsky desktop widgets automatically when you log in.")
@@ -123,6 +117,58 @@ public struct SettingsView: View {
             Toggle(isOn: .constant(true)) {
                 Text("Show in menu bar")
                 Text("Keep the Notsky icon in the menu bar for quick access.")
+            }
+            
+            Toggle(isOn: $settings.showInDock) {
+                Text("Show in macOS Dock")
+                Text("Keep the Notsky icon in the Dock and Command-Tab application switcher.")
+            }
+        }
+        
+        Section("Notes Shelf Drawer") {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Toggle Notes Shelf Drawer")
+                    Text("Open the sliding bottom shelf drawer with all note cards.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Toggle Drawer") {
+                    DrawerWindowManager.shared.toggleDrawer()
+                    SensoryFeedback.buttonClicked()
+                }
+                .controlSize(.small)
+            }
+            
+            LabeledContent("Global Keyboard Shortcut") {
+                HStack(spacing: 6) {
+                    shortcutBadge("⌘ ⇧ D")
+                    Text("or").font(.caption).foregroundStyle(.secondary)
+                    shortcutBadge("Double-tap ⌃")
+                }
+            }
+        }
+        
+        Section("Workspace & Demo Data") {
+            Toggle(isOn: $settings.demoDataEnabled) {
+                Text("Demo data")
+                Text("Fill sample tasks, freeform notes, and AI queries into your desktop cards.")
+            }
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Clear Workspace")
+                    Text("Remove all open cards from your desktop workspace.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Clear All Cards", role: .destructive) {
+                    WidgetWindowManager.shared.clearWorkspace()
+                    SensoryFeedback.buttonClicked()
+                }
+                .controlSize(.small)
             }
         }
         
@@ -179,46 +225,11 @@ public struct SettingsView: View {
     // MARK: - 3. Widgets Form
     @ViewBuilder
     private var widgetsForm: some View {
-        Section("Controls & Buttons Visibility") {
-            Picker("Controls behavior", selection: $settings.autoHideControls) {
-                Text("Auto-hide on Hover").tag(true)
-                Text("Always Visible").tag(false)
+        Section("Control Behavior") {
+            Toggle(isOn: $settings.autoHideControls) {
+                Text("Auto-hide controls on hover")
+                Text("Distraction-free mode. Top headers, timers, and action buttons fade in when hovering over a card.")
             }
-            .pickerStyle(.segmented)
-            .padding(.bottom, 4)
-            
-            // Side-by-Side Visual Previews
-            HStack(alignment: .top, spacing: 20) {
-                AutoHideCardPreview(
-                    title: "Auto-hide on Hover",
-                    subtitle: "Distraction-free. Buttons and options fade in when hovering.",
-                    autoHide: true,
-                    isSelected: settings.autoHideControls,
-                    onSelect: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
-                            settings.autoHideControls = true
-                        }
-                        SensoryFeedback.buttonClicked()
-                    }
-                )
-                .frame(maxWidth: .infinity)
-                
-                AutoHideCardPreview(
-                    title: "Always Visible",
-                    subtitle: "All buttons, timers & options permanently visible.",
-                    autoHide: false,
-                    isSelected: !settings.autoHideControls,
-                    onSelect: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
-                            settings.autoHideControls = false
-                        }
-                        SensoryFeedback.buttonClicked()
-                    }
-                )
-                .frame(maxWidth: .infinity)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
         }
         
         Section("Grid & Placement") {
@@ -402,9 +413,9 @@ public struct SettingsView: View {
         Section("Keyboard Shortcuts") {
             LabeledContent("Toggle Notes Shelf (Drawer)") {
                 HStack(spacing: 6) {
-                    shortcutBadge("Double-tap ⌃")
-                    Text("or").font(.caption).foregroundStyle(.secondary)
                     shortcutBadge("⌘ ⇧ D")
+                    Text("or").font(.caption).foregroundStyle(.secondary)
+                    shortcutBadge("Double-tap ⌃")
                 }
             }
             LabeledContent("Dismiss Notes Shelf") {
@@ -493,265 +504,19 @@ public struct SettingsView: View {
     }
 }
 
-// MARK: - Auto-Hide vs Always-Visible Exact Card Preview
-private struct AutoHideCardPreview: View {
-    let title: String
-    let subtitle: String
-    let autoHide: Bool
-    let isSelected: Bool
-    let onSelect: () -> Void
+// MARK: - Combined SettingsView (backward compatibility)
+public struct SettingsView: View {
+    @Binding public var selectedItem: SettingsSidebarItem
     
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var isHovering: Bool = false
-    
-    private var isDark: Bool { colorScheme == .dark }
-    private var showControls: Bool { !autoHide || isHovering }
-    
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 12) {
-                // Exact Live Note Card (Zero letterbox / fills column)
-                ExactCardMockView(
-                    showControls: showControls,
-                    isDark: isDark
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 40, style: .continuous)
-                        .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: isSelected ? 3.5 : 0)
-                )
-                .shadow(color: isSelected ? Color.accentColor.opacity(0.35) : Color.black.opacity(isDark ? 0.20 : 0.08), radius: isSelected ? 12 : 8, x: 0, y: 4)
-                .onHover { isHovering = $0 }
-                .animation(.spring(response: 0.28, dampingFraction: 0.85), value: showControls)
-                
-                // Selection Radio & Label aligned across column width
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 15))
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                        .padding(.top, 1)
-                    
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(title)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.primary)
-                        Text(subtitle)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Color.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Exact Card Mock View (Matches Live Desktop Widget 1:1)
-private struct ExactCardMockView: View {
-    let showControls: Bool
-    let isDark: Bool
-    
-    private let cardWidth: CGFloat = 308
-    private let cardHeight: CGFloat = 385
-    private let headerHeight: CGFloat = 53
-    private var sheetHeight: CGFloat { cardHeight - headerHeight }
-    private let cornerRadius: CGFloat = 40
-    
-    private var wallpaperPath: String {
-        AppSettings.shared.defaultWallpaper
+    public init(selectedItem: Binding<SettingsSidebarItem>) {
+        self._selectedItem = selectedItem
     }
     
-    private var sheetBackgroundColor: Color {
-        isDark ? Color(white: 0.12).opacity(0.85) : Color.white.opacity(0.90)
-    }
-    
-    private var taskTextColor: Color {
-        isDark ? Color.white : Color.black
-    }
-    
-    private var completedTaskColor: Color {
-        isDark ? Color(white: 0.45) : Color(red: 0.83, green: 0.83, blue: 0.83)
-    }
-    
-    private var buttonIconColor: Color {
-        isDark ? Color.white.opacity(0.92) : Color.black.opacity(0.75)
-    }
-    
-    private var specularBorderGradient: LinearGradient {
-        LinearGradient(
-            stops: [
-                .init(color: Color.white.opacity(isDark ? 0.35 : 0.70), location: 0.0),
-                .init(color: Color.white.opacity(isDark ? 0.12 : 0.25), location: 0.5),
-                .init(color: Color.white.opacity(isDark ? 0.02 : 0.08), location: 1.0)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-    }
-    
-    var body: some View {
-        ZStack(alignment: .top) {
-            // 1. Exact Full-Card Background Image (Loads /Users/romeet/Downloads/red_distortion_2.heic)
-            HeaderImageView(imagePath: wallpaperPath)
-                .frame(width: cardWidth, height: cardHeight)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            
-            // 2. Top Title & Ambient Focus Capsule
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(spacing: 8) {
-                    Text("Daily Focus")
-                        .font(.system(size: 13, weight: .medium, design: .default))
-                        .foregroundStyle(taskTextColor)
-                        .padding(.horizontal, 14)
-                        .frame(height: 36)
-                        .background(sheetBackgroundColor, in: Capsule())
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                        .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
-                    
-                    if showControls {
-                        HStack(spacing: 6) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(Color.orange)
-                            Text("25:00")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundStyle(taskTextColor.opacity(0.88))
-                        }
-                        .padding(.horizontal, 12)
-                        .frame(height: 36)
-                        .background(sheetBackgroundColor, in: Capsule())
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                        .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
-                    }
-                }
-                .frame(maxWidth: cardWidth - 28)
-                Spacer(minLength: 0)
-            }
-            .frame(width: cardWidth, height: headerHeight)
-            
-            // 3. Foreground Content Sheet
-            ZStack(alignment: .top) {
-                // Frosted Blurred Wallpaper Underlay
-                HeaderImageView(imagePath: wallpaperPath)
-                    .frame(width: cardWidth, height: cardHeight)
-                    .offset(y: -headerHeight)
-                    .blur(radius: 35)
-                    .scaleEffect(1.12)
-                    .saturation(1.25)
-                    .contrast(1.05)
-                    .frame(width: cardWidth, height: sheetHeight)
-                    .clipped()
-
-                // Frosted Glass Tint & System Material
-                sheetBackgroundColor
-                    .background(.ultraThinMaterial)
-
-                // Main Sheet Content
-                VStack(spacing: 0) {
-                    if showControls {
-                        HStack {
-                            Image(systemName: "plus")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(buttonIconColor)
-                                .frame(width: 40, height: 40)
-                                .background(sheetBackgroundColor, in: Circle())
-                                .background(.ultraThinMaterial, in: Circle())
-                                .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 12) {
-                                Image(systemName: "arrow.down.to.line").font(.system(size: 13, weight: .medium))
-                                Image(systemName: "pin").font(.system(size: 13, weight: .medium))
-                                Image(systemName: "photo.on.rectangle").font(.system(size: 13, weight: .medium))
-                                Image(systemName: "trash").font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundStyle(buttonIconColor)
-                            .padding(.horizontal, 12)
-                            .frame(height: 40)
-                            .background(sheetBackgroundColor, in: Capsule())
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                        }
-                        .frame(width: cardWidth - 28)
-                        .padding(.top, 12)
-                        .padding(.bottom, 4)
-                    }
-                    
-                    if !showControls {
-                        Spacer(minLength: 22)
-                    }
-                    
-                    // Task List
-                    VStack(alignment: .leading, spacing: 14) {
-                        exactTaskRow(index: 1, text: "Refine widget glassmorphism", done: true)
-                        exactTaskRow(index: 2, text: "Implement 2-column grid layout", done: true)
-                        exactTaskRow(index: 3, text: "Tune dark mode ambient shadows", done: false)
-                    }
-                    .frame(width: cardWidth - 46, alignment: .leading)
-                    .padding(.top, showControls ? 6 : 0)
-                    .padding(.bottom, showControls ? 8 : 0)
-                    
-                    Spacer(minLength: showControls ? 0 : 22)
-                    
-                    if showControls {
-                        HStack {
-                            Spacer()
-                            Text("Add Group")
-                                .font(.system(size: 13, weight: .medium, design: .default))
-                                .foregroundStyle(buttonIconColor)
-                                .padding(.horizontal, 14)
-                                .frame(height: 40)
-                                .background(sheetBackgroundColor, in: Capsule())
-                                .background(.ultraThinMaterial, in: Capsule())
-                                .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                        }
-                        .frame(width: cardWidth)
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 14)
-                    }
-                }
-            }
-            .frame(width: cardWidth, height: sheetHeight)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-            )
-            .offset(y: headerHeight)
-        }
-        .frame(width: cardWidth, height: cardHeight)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(isDark ? Color.white.opacity(0.12) : Color.white.opacity(0.20), lineWidth: 0.75)
-        )
-        .shadow(color: Color.black.opacity(isDark ? 0.12 : 0.06), radius: 16, x: 0, y: 6)
-    }
-    
-    private func exactTaskRow(index: Int, text: String, done: Bool) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("\(index).")
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(done ? completedTaskColor.opacity(isDark ? 0.75 : 0.65) : (isDark ? Color.white.opacity(0.45) : Color.black.opacity(0.40)))
-                .frame(minWidth: 18, alignment: .leading)
-                .padding(.top, 1)
-            
-            Text(text)
-                .font(.system(size: 15, weight: .regular, design: .default))
-                .tracking(-0.4)
-                .foregroundStyle(done ? completedTaskColor : taskTextColor)
-                .strikethrough(done, color: completedTaskColor.opacity(isDark ? 0.75 : 0.65))
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    public var body: some View {
+        NavigationSplitView {
+            SettingsSidebarView()
+        } detail: {
+            SettingsDetailView()
         }
     }
 }

@@ -184,6 +184,34 @@ public final class WallpaperPackManager {
         }
     }
     
+    public static func ensureWallpapersSeeded() {
+        let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("Notsky/Wallpapers")
+        try? FileManager.default.createDirectory(at: appSupportURL, withIntermediateDirectories: true)
+        
+        let candidateSources: [String] = [
+            Bundle.main.resourcePath.map { ($0 as NSString).appendingPathComponent("Wallpapers") },
+            Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/Wallpapers").path,
+            FileManager.default.currentDirectoryPath + "/Resources/Wallpapers",
+            "/Applications/Notsky.app/Contents/Resources/Wallpapers",
+            "/Users/romeet/AI - Projects/NotskyApp/Resources/Wallpapers"
+        ].compactMap { $0 }
+        
+        for source in candidateSources {
+            if FileManager.default.fileExists(atPath: source) {
+                if let files = try? FileManager.default.contentsOfDirectory(atPath: source) {
+                    for file in files {
+                        let srcPath = (source as NSString).appendingPathComponent(file)
+                        let dstPath = appSupportURL.appendingPathComponent(file).path
+                        if !FileManager.default.fileExists(atPath: dstPath) {
+                            try? FileManager.default.copyItem(atPath: srcPath, toPath: dstPath)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     public static var wallpapersDirectory: String {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("Notsky/Wallpapers").path
@@ -196,7 +224,11 @@ public final class WallpaperPackManager {
                 return bundleWallpapers
             }
         }
-        return "/Users/romeet/.gemini/antigravity/scratch/NotskyApp/Resources/Wallpapers"
+        let localResources = FileManager.default.currentDirectoryPath + "/Resources/Wallpapers"
+        if FileManager.default.fileExists(atPath: localResources) {
+            return localResources
+        }
+        return appSupport
     }
     
     public static var defaultFallbackPath: String {
@@ -213,7 +245,25 @@ public final class WallpaperPackManager {
     }
     
     private static func wallpaperPath(_ filename: String) -> String {
-        (wallpapersDirectory as NSString).appendingPathComponent(filename)
+        let appSupport = (wallpapersDirectory as NSString).appendingPathComponent(filename)
+        if FileManager.default.fileExists(atPath: appSupport) {
+            return appSupport
+        }
+        if let bundleResourcePath = Bundle.main.resourcePath {
+            let bundleWallpapers = (bundleResourcePath as NSString).appendingPathComponent("Wallpapers/\(filename)")
+            if FileManager.default.fileExists(atPath: bundleWallpapers) {
+                return bundleWallpapers
+            }
+        }
+        let localResources = FileManager.default.currentDirectoryPath + "/Resources/Wallpapers/\(filename)"
+        if FileManager.default.fileExists(atPath: localResources) {
+            return localResources
+        }
+        let projectResources = "/Users/romeet/AI - Projects/NotskyApp/Resources/Wallpapers/\(filename)"
+        if FileManager.default.fileExists(atPath: projectResources) {
+            return projectResources
+        }
+        return appSupport
     }
     
     public static func builtInPacks() -> [WallpaperPack] {

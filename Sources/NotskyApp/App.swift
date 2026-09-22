@@ -2,7 +2,20 @@ import SwiftUI
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ProcessInfo.processInfo.disableAutomaticTermination("Notsky runs persistent desktop widgets and menu bar")
+
+        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "com.romeet.notsky")
+        for app in runningApps where app != NSRunningApplication.current {
+            app.terminate()
+        }
+        
+        WallpaperPackManager.ensureWallpapersSeeded()
+        
         if CommandLine.arguments.contains("--generate-screenshots") {
             generateShowcaseScreenshots()
             NSApp.terminate(nil)
@@ -144,64 +157,47 @@ struct NotskyApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Button("Toggle Notes Shelf (Drawer)") {
-                DrawerWindowManager.shared.toggleDrawer()
-            }
-            .keyboardShortcut("d", modifiers: [.command, .shift])
-
-            Divider()
-
-            Button("New Task Group Card") {
-                manager.spawnNewWidget()
-            }
-            .keyboardShortcut("n", modifiers: [.command])
-
-            Button("New Freeform Note Card") {
-                manager.spawnNewFreeformNoteWidget()
-            }
-            .keyboardShortcut("n", modifiers: [.command, .shift])
-
-            Button("New AI Finder Card") {
-                manager.spawnNewFinderWidget()
-            }
-            .keyboardShortcut("f", modifiers: [.command, .option])
-
-            Divider()
-
-            Button("Populate Demo Data (Screen Recording)") {
-                manager.fillDemoData()
-            }
-
-            Button("Clear Workspace") {
-                manager.clearWorkspace()
-            }
-
-            Divider()
-
-            Button(action: {
-                AppSettings.shared.showInDock.toggle()
-            }) {
-                HStack {
-                    Text("Show in Dock")
-                    if AppSettings.shared.showInDock {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
-
-            Button("Settings...") {
-                SettingsWindowManager.shared.showSettings(item: .general)
-            }
-            .keyboardShortcut(",", modifiers: [.command])
-
-            Divider()
-
-            Button("Quit Notsky") {
-                NSApplication.shared.terminate(nil)
-            }
-            .keyboardShortcut("q", modifiers: [.command])
+            MenuBarContentView()
         } label: {
             Image(nsImage: MenuBarIconManager.shared.menuBarIcon)
         }
     }
 }
+
+struct MenuBarContentView: View {
+    @ObservedObject private var manager = WidgetWindowManager.shared
+
+    var body: some View {
+        Button("New Task Group Card") {
+            manager.spawnNewWidget()
+        }
+        .keyboardShortcut("n", modifiers: [.command])
+
+        Button("New Freeform Note Card") {
+            manager.spawnNewFreeformNoteWidget()
+        }
+        .keyboardShortcut("n", modifiers: [.command, .shift])
+
+        Divider()
+
+        Button("Clear Workspace") {
+            manager.clearWorkspace()
+        }
+
+        Divider()
+
+        Button("Settings...") {
+            SettingsWindowManager.shared.showSettings(item: .general)
+        }
+        .keyboardShortcut(",", modifiers: [.command])
+
+        Divider()
+
+        Button("Quit Notsky") {
+            NSApplication.shared.terminate(nil)
+        }
+        .keyboardShortcut("q", modifiers: [.command])
+    }
+}
+
+

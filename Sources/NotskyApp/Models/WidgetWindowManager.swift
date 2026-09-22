@@ -110,7 +110,9 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func start() {
         if store.notes.isEmpty {
-            store.addNote()
+            ensureDefaultWorkspaceCards()
+            setDemoData(enabled: AppSettings.shared.demoDataEnabled)
+            return
         }
         
         for (index, note) in store.notes.enumerated() {
@@ -465,7 +467,11 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
         store.notes.removeAll()
     }
     
-    public func fillDemoData() {
+    public func ensureDefaultWorkspaceCards() {
+        if store.notes.count == 4 {
+            return
+        }
+        
         clearWorkspace()
         
         let packs = WallpaperPackManager.builtInPacks()
@@ -476,19 +482,12 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
         let w2 = items.indices.contains(2) ? items[2].path : WallpaperPackManager.shared.nextWallpaperPath()
         let w3 = items.indices.contains(1) ? items[1].path : (items.indices.contains(3) ? items[3].path : WallpaperPackManager.shared.nextWallpaperPath())
         
-        let card1Id = UUID()
         let card1 = NoteCard(
-            id: card1Id,
+            id: UUID(),
             cardType: .tasks,
-            title: "Design Iterations",
+            title: "Tasks",
             headerImagePath: w0,
-            items: [
-                NoteItem(text: "Explore liquid-glass refraction shaders", isCompleted: true),
-                NoteItem(text: "Refine superellipse continuous corners (40pt)", isCompleted: true),
-                NoteItem(text: "Tune dynamic wallpaper luminance tinting", isCompleted: true),
-                NoteItem(text: "Test multi-monitor cursor magnetic snapping", isCompleted: false),
-                NoteItem(text: "Polish over-dock slide shelf animations", isCompleted: false)
-            ],
+            items: [],
             gridCol: 0,
             gridRow: 0,
             width: 281,
@@ -498,63 +497,27 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             isTimerRunning: false
         )
         
-        let card2Id = UUID()
         let card2 = NoteCard(
-            id: card2Id,
+            id: UUID(),
             cardType: .tasks,
-            title: "Launch Checklist",
+            title: "Tasks",
             headerImagePath: w1,
-            items: [
-                NoteItem(text: "Finalize macOS AppIcon & Dock integration", isCompleted: true),
-                NoteItem(text: "Verify template menu bar icon optical height", isCompleted: true),
-                NoteItem(text: "Test slide-up drawer over sticky dock", isCompleted: true),
-                NoteItem(text: "Render 4K UI widget showcase mockups", isCompleted: true),
-                NoteItem(text: "Ship v1.0.0 release build to GitHub", isCompleted: false)
-            ],
+            items: [],
             gridCol: 1,
             gridRow: 0,
             width: 281,
             height: 364,
             timerDuration: 25 * 60,
-            timeRemaining: 18 * 60 + 42,
-            isTimerRunning: true
+            timeRemaining: 25 * 60,
+            isTimerRunning: false
         )
         
-        let strategyContent = """
-**Core Architecture Principles**
-
-• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
-
-• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
-
-• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
-"""
-        let ideasContent = """
-**Product Ideas & Brainstorming**
-
-• **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
-• **Trackpad Gestures**: Swipe smoothly between note tabs.
-• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
-"""
-        let snippetsContent = """
-**Developer & Design Snippets**
-
-• `git commit -m "feat: multi-tab quick notes"`
-• `swift build -c release`
-• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
-"""
-        
-        let card3Id = UUID()
         let card3 = NoteCard(
-            id: card3Id,
+            id: UUID(),
             cardType: .notes,
-            title: "Strategy & Notes",
-            noteContent: strategyContent,
-            pages: [
-                NotePage(title: "Strategy", content: strategyContent),
-                NotePage(title: "Ideas", content: ideasContent),
-                NotePage(title: "Snippets", content: snippetsContent)
-            ],
+            title: "Notes",
+            noteContent: "",
+            pages: [NotePage(title: "Untitled", content: "")],
             activePageIndex: 0,
             headerImagePath: w2,
             items: [],
@@ -564,25 +527,14 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             height: 364
         )
         
-        let card4Id = UUID()
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let sampleFiles = [
-            FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
-            FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
-            FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
-        ]
-        
         let card4 = NoteCard(
-            id: card4Id,
+            id: UUID(),
             cardType: .finder,
             title: "notskyai",
             noteContent: "",
             headerImagePath: w3,
             items: [],
-            chatMessages: [
-                ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
-                ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
-            ],
+            chatMessages: [],
             gridCol: 2,
             gridRow: 0,
             width: 586,
@@ -598,6 +550,112 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             store.notes[index].positionY = origin.y
             openWidgetWindow(for: note.id, at: origin)
         }
+    }
+    
+    public func setDemoData(enabled: Bool) {
+        ensureDefaultWorkspaceCards()
+        
+        if enabled {
+            // Populate demo data into the cards
+            if store.notes.indices.contains(0) {
+                store.notes[0].title = "Design Iterations"
+                store.notes[0].items = [
+                    NoteItem(text: "Explore liquid-glass refraction shaders", isCompleted: true),
+                    NoteItem(text: "Refine superellipse continuous corners (40pt)", isCompleted: true),
+                    NoteItem(text: "Tune dynamic wallpaper luminance tinting", isCompleted: true),
+                    NoteItem(text: "Test multi-monitor cursor magnetic snapping", isCompleted: false),
+                    NoteItem(text: "Polish over-dock slide shelf animations", isCompleted: false)
+                ]
+            }
+            if store.notes.indices.contains(1) {
+                store.notes[1].title = "Launch Checklist"
+                store.notes[1].items = [
+                    NoteItem(text: "Finalize macOS AppIcon & Dock integration", isCompleted: true),
+                    NoteItem(text: "Verify template menu bar icon optical height", isCompleted: true),
+                    NoteItem(text: "Test slide-up drawer over sticky dock", isCompleted: true),
+                    NoteItem(text: "Render 4K UI widget showcase mockups", isCompleted: true),
+                    NoteItem(text: "Ship v1.0.0 release build to GitHub", isCompleted: false)
+                ]
+                store.notes[1].timeRemaining = 18 * 60 + 42
+                store.notes[1].isTimerRunning = true
+            }
+            if store.notes.indices.contains(2) {
+                let strategyContent = """
+**Core Architecture Principles**
+
+• **Zero-Latency Spatial Physics**: Native AppKit NSPanel windows with hardware acceleration.
+
+• **Dynamic Visual Cohesion**: Background-aware chromatic adaptation.
+
+• **Spatial Canvas Freedom**: Independent movable widgets with magnetic snapping.
+"""
+                let ideasContent = """
+**Product Ideas & Brainstorming**
+
+• **Multi-Tab Cards**: Keep workspace tidy with tabbed desktop cards.
+• **Trackpad Gestures**: Swipe smoothly between note tabs.
+• **Rich 4K Cards**: Instant wallpaper exports for sharing on social platforms.
+"""
+                let snippetsContent = """
+**Developer & Design Snippets**
+
+• `git commit -m "feat: multi-tab quick notes"`
+• `swift build -c release`
+• **Material Formula**: `.ultraThinMaterial` + `specularBorderGradient`
+"""
+                store.notes[2].title = "Strategy & Notes"
+                store.notes[2].noteContent = strategyContent
+                store.notes[2].pages = [
+                    NotePage(title: "Strategy", content: strategyContent),
+                    NotePage(title: "Ideas", content: ideasContent),
+                    NotePage(title: "Snippets", content: snippetsContent)
+                ]
+                store.notes[2].activePageIndex = 0
+            }
+            if store.notes.indices.contains(3) {
+                let home = FileManager.default.homeDirectoryForCurrentUser.path
+                let sampleFiles = [
+                    FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
+                    FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
+                    FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
+                ]
+                store.notes[3].title = "notskyai"
+                store.notes[3].chatMessages = [
+                    ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
+                    ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
+                ]
+            }
+        } else {
+            // Reset contents to empty / blank, keeping the cards visible
+            if store.notes.indices.contains(0) {
+                store.notes[0].title = "Tasks"
+                store.notes[0].items = []
+                store.notes[0].isTimerRunning = false
+                store.notes[0].timeRemaining = store.notes[0].timerDuration
+            }
+            if store.notes.indices.contains(1) {
+                store.notes[1].title = "Tasks"
+                store.notes[1].items = []
+                store.notes[1].isTimerRunning = false
+                store.notes[1].timeRemaining = store.notes[1].timerDuration
+            }
+            if store.notes.indices.contains(2) {
+                store.notes[2].title = "Notes"
+                store.notes[2].noteContent = ""
+                store.notes[2].pages = [NotePage(title: "Untitled", content: "")]
+                store.notes[2].activePageIndex = 0
+            }
+            if store.notes.indices.contains(3) {
+                store.notes[3].title = "notskyai"
+                store.notes[3].chatMessages = []
+            }
+        }
+        
+        store.saveToDisk()
         SensoryFeedback.buttonClicked()
+    }
+    
+    public func fillDemoData() {
+        setDemoData(enabled: true)
     }
 }

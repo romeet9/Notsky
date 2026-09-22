@@ -2,56 +2,100 @@ import SwiftUI
 import AppKit
 
 @MainActor
-public final class SettingsWindowManager: ObservableObject {
+public final class SettingsWindowManager: NSObject, ObservableObject, NSWindowDelegate, NSToolbarDelegate {
     public static let shared = SettingsWindowManager()
     
-    private var windowController: NSWindowController?
-    @Published public var currentItem: SettingsSidebarItem = .general
+    @Published public var currentItem: SettingsSidebarItem = .general {
+        didSet {
+            window?.title = currentItem.rawValue
+        }
+    }
     
-    private init() {}
+    private var window: NSWindow?
+    
+    private override init() {
+        super.init()
+    }
     
     public func showSettings(item: SettingsSidebarItem = .general) {
         self.currentItem = item
         
-        if let controller = windowController, let window = controller.window {
-            window.makeKeyAndOrderFront(nil)
+        if let existing = window {
+            if existing.isMiniaturized { existing.deminiaturize(nil) }
+            existing.title = currentItem.rawValue
             NSApp.activate(ignoringOtherApps: true)
+            existing.makeKeyAndOrderFront(nil)
             return
         }
         
-        // Raycast-style Native macOS Settings Window
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 920, height: 680),
-            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+        let size = CGSize(width: 860, height: 580)
+        
+        // Stock macOS Split View Controller (as used in Tinycast / System Settings)
+        let sidebarVC = NSHostingController(rootView: SettingsSidebarView())
+        let detailVC = NSHostingController(rootView: SettingsDetailView())
+        
+        let splitVC = NSSplitViewController()
+        
+        let sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebarVC)
+        sidebarItem.minimumThickness = 210
+        sidebarItem.maximumThickness = 240
+        sidebarItem.canCollapse = false
+        
+        let detailItem = NSSplitViewItem(viewController: detailVC)
+        detailItem.minimumThickness = 500
+        
+        splitVC.addSplitViewItem(sidebarItem)
+        splitVC.addSplitViewItem(detailItem)
+        
+        // Stock macOS Window setup
+        let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        let win = NSWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: style,
             backing: .buffered,
             defer: false
         )
+        win.title = currentItem.rawValue
+        win.titleVisibility = .visible
+        win.toolbarStyle = .unified
+        win.titlebarSeparatorStyle = .none
+        win.titlebarAppearsTransparent = false
+        win.isMovableByWindowBackground = false
+        win.isReleasedWhenClosed = false
+        win.contentMinSize = size
+        win.delegate = self
         
-        window.title = "Notsky Settings"
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.isReleasedWhenClosed = false
-        window.isMovableByWindowBackground = true
-        window.backgroundColor = NSColor(red: 0.11, green: 0.09, blue: 0.10, alpha: 1.0)
-        window.center()
+        // Toolbar with sidebar tracking separator
+        let toolbar = NSToolbar(identifier: "NotskySettingsToolbar")
+        toolbar.delegate = self
+        toolbar.displayMode = .iconOnly
+        toolbar.allowsUserCustomization = false
+        if #available(macOS 15.0, *) {
+            toolbar.allowsDisplayModeCustomization = false
+        }
+        win.toolbar = toolbar
         
-        let hostingView = NSHostingView(
-            rootView: SettingsHostView(manager: self)
-        )
-        window.contentView = hostingView
+        win.contentViewController = splitVC
+        win.setContentSize(size)
+        win.center()
         
-        let controller = NSWindowController(window: window)
-        self.windowController = controller
+        self.window = win
         
-        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        win.makeKeyAndOrderFront(nil)
     }
-}
-
-private struct SettingsHostView: View {
-    @ObservedObject var manager: SettingsWindowManager
     
-    var body: some View {
-        SettingsView(selectedItem: $manager.currentItem)
+    // MARK: - NSToolbarDelegate
+    public func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        [.sidebarTrackingSeparator]
+    }
+    
+    public func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        [.sidebarTrackingSeparator]
+    }
+    
+    // MARK: - NSWindowDelegate
+    public func windowWillClose(_ notification: Notification) {
+        self.window = nil
     }
 }

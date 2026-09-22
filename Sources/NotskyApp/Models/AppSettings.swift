@@ -20,6 +20,16 @@ public final class AppSettings {
     private let kDefaultWallpaper = "notsky.defaultWallpaper"
     private let kAutoPauseTimers = "notsky.autoPauseTimers"
     private let kAutoHideControls = "notsky.autoHideControls"
+    private let kDemoDataEnabled = "notsky.demoDataEnabled"
+    
+    public var demoDataEnabled: Bool {
+        didSet {
+            defaults.set(demoDataEnabled, forKey: kDemoDataEnabled)
+            Task { @MainActor in
+                WidgetWindowManager.shared.setDemoData(enabled: demoDataEnabled)
+            }
+        }
+    }
     
     public var showInDock: Bool {
         didSet {
@@ -150,6 +160,7 @@ public final class AppSettings {
         self.defaultWallpaper = defaults.string(forKey: kDefaultWallpaper) ?? WallpaperPackManager.builtInPacks().first?.items.first?.path ?? WallpaperPackManager.defaultFallbackPath
         self.autoPauseTimers = defaults.object(forKey: kAutoPauseTimers) == nil ? true : defaults.bool(forKey: kAutoPauseTimers)
         self.autoHideControls = defaults.object(forKey: kAutoHideControls) == nil ? true : defaults.bool(forKey: kAutoHideControls)
+        self.demoDataEnabled = defaults.object(forKey: kDemoDataEnabled) == nil ? true : defaults.bool(forKey: kDemoDataEnabled)
         
         // Sync to SensoryFeedback, Dock policy & NSApp appearance
         SensoryFeedback.soundEnabled = self.soundEnabled
