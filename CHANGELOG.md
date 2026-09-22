@@ -1,11 +1,18 @@
 # Changelog
 
-## [1.0.3] - 2026-09-23
+## [1.0.4] - 2026-09-23
 
 ### What's Changed
-- **DMG Installer Distribution**: Added packaged `.dmg` disk image with drag-and-drop `/Applications` shortcut for instant, seamless macOS installation.
-- **Native macOS Settings Architecture**: Re-engineered using AppKit `NSSplitViewController` + unified `NSToolbar` with `sidebarTrackingSeparator` for authentic macOS appearance.
-- **Stock macOS UI Components**: Standard sidebar navigation with SF Symbols & SF Pro typography, rounded inset grouped form cards, and instant search.
-- **In-Place Demo Data Toggle**: On/off switch in Settings → General to populate or reset sample tasks, notes, and AI queries across default cards without closing them.
-- **Stability & Lifecycle Fixes**: Disabled automatic AppKit termination so background widgets remain active without random exits.
-- **Bundled Raycast Wallpapers**: Included built-in wallpaper collection inside the bundle with automated user library seeding.
+- **97% Size Reduction (17 MB)**: Cleaned unused high-resolution assets and optimized bundled Raycast wallpapers for Retina displays, shrinking the installer from 475 MB down to ~17 MB.
+- **DMG Installer with Drag & Drop**: Included packaged `.dmg` disk image with `/Applications` folder shortcut for simple installation.
+- **macOS Gatekeeper Compatibility**: Cleaned ad-hoc code signature across all bundle frameworks.
+- **Native macOS Settings Architecture**: AppKit `NSSplitViewController` + unified `NSToolbar` with `sidebarTrackingSeparator`.
+- **In-Place Demo Data Reset**: Toggle in Settings → General populates or resets sample content across desktop cards without closing windows.
+
+---
+
+### Note for First Launch on macOS
+Because Notsky is an independent open-source application:
+1. Drag **Notsky** to **Applications** from the DMG.
+2. If macOS Gatekeeper shows a security prompt on first launch, **Right-Click (Control-Click) Notsky** in `/Applications` → click **Open** → click **Open** in the confirmation dialog.
+3. Or run `xattr -cr /Applications/Notsky.app` in Terminal to clear the download quarantine flag.
