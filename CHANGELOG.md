@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.9] - 2026-09-23
+
+### What's Changed
+- **New Wallpaper Packs Added**:
+  - **OxygenOS 15 Stock**: 6 official mineral and fluid flowing wave wallpapers.
+  - **iOS 26 CarPlay**: 6 dynamic 4K automotive cockpit wallpapers (Light, Dark, Amber, Crimson, Indigo, Azure).
+  - **iPhone Air 2025**: 6 next-gen organic fluid ribbon wallpapers (Cyan, Coral, Violet, Mint, Flame, Nebula).
+
 ## [1.0.8] - 2026-09-23
 
 ### What's Changed

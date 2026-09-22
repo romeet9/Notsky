@@ -48,7 +48,7 @@ public final class UpdateManager {
     public var lastCheckedDate: Date?
     
     public var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.8"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.9"
     }
     
     private init() {}

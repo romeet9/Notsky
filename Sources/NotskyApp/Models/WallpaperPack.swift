@@ -527,6 +527,159 @@ public final class WallpaperPackManager {
                         accentHue: 0.78
                     )
                 ]
+            ),
+            
+            // Pack: OxygenOS 15 Stock Wallpapers
+            WallpaperPack(
+                id: "oxygenos_15",
+                name: "OxygenOS 15 Stock",
+                description: "Official OnePlus OxygenOS 15 abstract mineral and fluid flowing wave wallpapers.",
+                items: [
+                    WallpaperItem(
+                        id: "oxygen_1",
+                        name: "Oxygen 1 - Prismatic Coral",
+                        path: wallpaperPath("oxygenos/oxygen_1.jpg"),
+                        gradientColors: [Color(red: 0.92, green: 0.35, blue: 0.45), Color(red: 0.20, green: 0.25, blue: 0.65)],
+                        accentHue: 0.95
+                    ),
+                    WallpaperItem(
+                        id: "oxygen_2",
+                        name: "Oxygen 2 - Liquid Sapphire",
+                        path: wallpaperPath("oxygenos/oxygen_2.jpg"),
+                        gradientColors: [Color(red: 0.20, green: 0.55, blue: 0.95), Color(red: 0.05, green: 0.15, blue: 0.45)],
+                        accentHue: 0.60
+                    ),
+                    WallpaperItem(
+                        id: "oxygen_3",
+                        name: "Oxygen 3 - Obsidian Gold",
+                        path: wallpaperPath("oxygenos/oxygen_3.jpg"),
+                        gradientColors: [Color(red: 0.90, green: 0.65, blue: 0.25), Color(red: 0.20, green: 0.15, blue: 0.25)],
+                        accentHue: 0.11
+                    ),
+                    WallpaperItem(
+                        id: "oxygen_4",
+                        name: "Oxygen 4 - Emerald Wave",
+                        path: wallpaperPath("oxygenos/oxygen_4.jpg"),
+                        gradientColors: [Color(red: 0.15, green: 0.75, blue: 0.60), Color(red: 0.08, green: 0.25, blue: 0.35)],
+                        accentHue: 0.46
+                    ),
+                    WallpaperItem(
+                        id: "oxygen_5",
+                        name: "Oxygen 5 - Sunset Glow",
+                        path: wallpaperPath("oxygenos/oxygen_5.jpg"),
+                        gradientColors: [Color(red: 0.95, green: 0.45, blue: 0.30), Color(red: 0.55, green: 0.10, blue: 0.40)],
+                        accentHue: 0.04
+                    ),
+                    WallpaperItem(
+                        id: "oxygen_6",
+                        name: "Oxygen 6 - Amethyst Flow",
+                        path: wallpaperPath("oxygenos/oxygen_6.jpg"),
+                        gradientColors: [Color(red: 0.65, green: 0.30, blue: 0.85), Color(red: 0.15, green: 0.10, blue: 0.35)],
+                        accentHue: 0.76
+                    )
+                ]
+            ),
+            
+            // Pack: iOS 26 Apple CarPlay Stock Wallpapers
+            WallpaperPack(
+                id: "ios26_carplay",
+                name: "iOS 26 CarPlay",
+                description: "Apple CarPlay 4K dynamic automotive cockpit wallpapers in light & dark aesthetics.",
+                items: [
+                    WallpaperItem(
+                        id: "carplay_dark_1",
+                        name: "CarPlay Dark Noir",
+                        path: wallpaperPath("carplay/carplay_dark_1.jpg"),
+                        gradientColors: [Color(red: 0.25, green: 0.25, blue: 0.30), Color(red: 0.10, green: 0.10, blue: 0.12)],
+                        accentHue: 0.0
+                    ),
+                    WallpaperItem(
+                        id: "carplay_light_1",
+                        name: "CarPlay Studio Light",
+                        path: wallpaperPath("carplay/carplay_light_1.jpg"),
+                        gradientColors: [Color(red: 0.90, green: 0.92, blue: 0.96), Color(red: 0.65, green: 0.70, blue: 0.80)],
+                        accentHue: 0.58
+                    ),
+                    WallpaperItem(
+                        id: "carplay_amber",
+                        name: "CarPlay Amber Radiance",
+                        path: wallpaperPath("carplay/carplay_amber.jpg"),
+                        gradientColors: [Color(red: 0.95, green: 0.55, blue: 0.20), Color(red: 0.45, green: 0.15, blue: 0.10)],
+                        accentHue: 0.08
+                    ),
+                    WallpaperItem(
+                        id: "carplay_crimson",
+                        name: "CarPlay Crimson Speed",
+                        path: wallpaperPath("carplay/carplay_crimson.jpg"),
+                        gradientColors: [Color(red: 0.90, green: 0.15, blue: 0.35), Color(red: 0.45, green: 0.05, blue: 0.15)],
+                        accentHue: 0.96
+                    ),
+                    WallpaperItem(
+                        id: "carplay_indigo",
+                        name: "CarPlay Indigo Night",
+                        path: wallpaperPath("carplay/carplay_indigo.jpg"),
+                        gradientColors: [Color(red: 0.35, green: 0.25, blue: 0.80), Color(red: 0.12, green: 0.08, blue: 0.30)],
+                        accentHue: 0.72
+                    ),
+                    WallpaperItem(
+                        id: "carplay_azure",
+                        name: "CarPlay Azure Electric",
+                        path: wallpaperPath("carplay/carplay_azure.jpg"),
+                        gradientColors: [Color(red: 0.15, green: 0.55, blue: 0.95), Color(red: 0.05, green: 0.20, blue: 0.50)],
+                        accentHue: 0.58
+                    )
+                ]
+            ),
+            
+            // Pack: iPhone Air 2025 Stock Wallpapers
+            WallpaperPack(
+                id: "iphone_air_2025",
+                name: "iPhone Air 2025",
+                description: "Next-gen iPhone Air organic fluid ribbons and ethereal gradient atmospheres.",
+                items: [
+                    WallpaperItem(
+                        id: "iphone_air_1",
+                        name: "iPhone Air Titanium Cyan",
+                        path: wallpaperPath("iphone_air/iphone_air_1.jpg"),
+                        gradientColors: [Color(red: 0.20, green: 0.70, blue: 0.85), Color(red: 0.10, green: 0.20, blue: 0.45)],
+                        accentHue: 0.53
+                    ),
+                    WallpaperItem(
+                        id: "iphone_air_2",
+                        name: "iPhone Air Solar Coral",
+                        path: wallpaperPath("iphone_air/iphone_air_2.jpg"),
+                        gradientColors: [Color(red: 0.95, green: 0.40, blue: 0.35), Color(red: 0.45, green: 0.10, blue: 0.30)],
+                        accentHue: 0.02
+                    ),
+                    WallpaperItem(
+                        id: "iphone_air_3",
+                        name: "iPhone Air Cosmic Violet",
+                        path: wallpaperPath("iphone_air/iphone_air_3.jpg"),
+                        gradientColors: [Color(red: 0.65, green: 0.35, blue: 0.90), Color(red: 0.20, green: 0.10, blue: 0.40)],
+                        accentHue: 0.76
+                    ),
+                    WallpaperItem(
+                        id: "iphone_air_4",
+                        name: "iPhone Air Glacial Mint",
+                        path: wallpaperPath("iphone_air/iphone_air_4.jpg"),
+                        gradientColors: [Color(red: 0.25, green: 0.85, blue: 0.75), Color(red: 0.10, green: 0.35, blue: 0.40)],
+                        accentHue: 0.46
+                    ),
+                    WallpaperItem(
+                        id: "iphone_air_5",
+                        name: "iPhone Air Amber Flame",
+                        path: wallpaperPath("iphone_air/iphone_air_5.jpg"),
+                        gradientColors: [Color(red: 0.98, green: 0.65, blue: 0.20), Color(red: 0.60, green: 0.20, blue: 0.10)],
+                        accentHue: 0.10
+                    ),
+                    WallpaperItem(
+                        id: "iphone_air_6",
+                        name: "iPhone Air Nebula Indigo",
+                        path: wallpaperPath("iphone_air/iphone_air_6.jpg"),
+                        gradientColors: [Color(red: 0.40, green: 0.30, blue: 0.85), Color(red: 0.15, green: 0.12, blue: 0.35)],
+                        accentHue: 0.70
+                    )
+                ]
             )
         ]
     }
