@@ -9,6 +9,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination("Notsky runs persistent desktop widgets and menu bar")
 
+        let bundlePath = Bundle.main.bundlePath
+        if bundlePath.hasPrefix("/Volumes/") {
+            // User launched directly from DMG volume.
+            // Copy to /Applications, clear quarantine, launch installed app, and exit volume process.
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", """
+            cp -R "\(bundlePath)" "/Applications/Notsky.app" 2>/dev/null || true
+            xattr -cr "/Applications/Notsky.app" 2>/dev/null || true
+            open "/Applications/Notsky.app"
+            """]
+            try? process.run()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                NSApp.terminate(nil)
+            }
+            return
+        }
+
         let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "com.romeet.notsky")
         for app in runningApps where app != NSRunningApplication.current {
             app.terminate()
@@ -185,6 +203,13 @@ struct MenuBarContentView: View {
         }
 
         Divider()
+
+        Button("Check for Updates...") {
+            SettingsWindowManager.shared.showSettings(item: .about)
+            Task {
+                await UpdateManager.shared.checkForUpdates()
+            }
+        }
 
         Button("Settings...") {
             SettingsWindowManager.shared.showSettings(item: .general)

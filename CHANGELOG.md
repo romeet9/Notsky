@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6] - 2026-09-23
+
+### What's Changed
+- **Automatic GitHub In-App Updates**: Check for new releases directly within Settings or the Menu Bar, with one-click automatic download, installation, and relaunch.
+- **Process Stability & DMG Fix**: Fixed accidental termination when launching from mounted DMG volumes; auto-installs to `/Applications` smoothly.
+- **Enhanced Settings UI**: Real-time update checking status and release notes viewer in Settings → About.
+
 ## [1.0.5] - 2026-09-23
 
 ### What's Changed

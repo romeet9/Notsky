@@ -172,6 +172,25 @@ public struct SettingsDetailView: View {
             }
         }
         
+        Section("Updates") {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Notsky Updates")
+                    Text("Current version: v\(UpdateManager.shared.currentVersion)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Check for Updates...") {
+                    SettingsWindowManager.shared.showSettings(item: .about)
+                    Task {
+                        await UpdateManager.shared.checkForUpdates()
+                    }
+                }
+                .controlSize(.small)
+            }
+        }
+        
         Section("Window Behavior") {
             Picker("Default window layer", selection: .constant("Desktop Canvas")) {
                 Text("Desktop Canvas").tag("Desktop Canvas")
@@ -465,7 +484,7 @@ public struct SettingsDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Notsky")
                         .font(.headline)
-                    Text("Version 1.0.0 (Native macOS)")
+                    Text("Version \(UpdateManager.shared.currentVersion) (Native macOS)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text("Minimalist glassmorphic desktop widget notes & focus studio.")
@@ -476,10 +495,105 @@ public struct SettingsDetailView: View {
             .padding(.vertical, 4)
         }
         
+        Section("Software Updates") {
+            updateStatusRow
+        }
+        
         Section("Platform") {
             LabeledContent("Architecture", value: "Apple Silicon Native")
             LabeledContent("Frameworks", value: "SwiftUI & AppKit")
+            LabeledContent("Repository", value: "github.com/romeet9/Notsky")
         }
+    }
+    
+    @ViewBuilder
+    private var updateStatusRow: some View {
+        let updater = UpdateManager.shared
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("GitHub Releases")
+                        .font(.body)
+                    
+                    switch updater.status {
+                    case .idle:
+                        if let date = updater.lastCheckedDate {
+                            Text("Last checked: \(date.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Check for the latest features, fixes, and performance updates.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    case .checking:
+                        Text("Checking GitHub Releases for updates...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    case .upToDate:
+                        Text("Notsky is up to date (Version \(updater.currentVersion)).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    case .updateAvailable(let ver, _, _):
+                        Text("New version \(ver) is available!")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    case .downloading:
+                        Text("Downloading latest release from GitHub...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    case .installing:
+                        Text("Installing update and preparing to relaunch...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    case .error(let msg):
+                        Text("Update error: \(msg)")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                
+                Spacer()
+                
+                switch updater.status {
+                case .idle, .upToDate, .error:
+                    Button("Check for Updates") {
+                        Task {
+                            await updater.checkForUpdates()
+                        }
+                    }
+                    .controlSize(.small)
+                case .checking:
+                    ProgressView()
+                        .controlSize(.small)
+                case .updateAvailable(_, _, let downloadUrl):
+                    Button("Install Update") {
+                        Task {
+                            await updater.downloadAndInstall(url: downloadUrl)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                case .downloading, .installing:
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+            
+            if case .updateAvailable(let ver, let notes, _) = updater.status, !notes.isEmpty {
+                DisclosureGroup("Release Notes (\(ver))") {
+                    ScrollView {
+                        Text(notes)
+                            .font(.system(size: 11.5))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 4)
+                    }
+                    .frame(maxHeight: 120)
+                }
+                .font(.caption)
+            }
+        }
+        .padding(.vertical, 2)
     }
     
     // MARK: - Helpers
