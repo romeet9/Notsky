@@ -65,6 +65,10 @@ public struct NoteCardView: View {
     @State private var isHoveringGallery: Bool = false
     @State private var isHoveringTrash: Bool = false
     @State private var isHoveringNewCard: Bool = false
+    @State private var isHoveringFolderMenu: Bool = false
+    @State private var showFolderPopover: Bool = false
+    @State private var showNewFolderDialog: Bool = false
+    @State private var newFolderNameInput: String = ""
     @State private var isHoveringResizeW: Bool = false
     @State private var isHoveringResizeH: Bool = false
     @State private var isHoveringResizeCorner: Bool = false
@@ -348,6 +352,37 @@ public struct NoteCardView: View {
             
             Divider()
             
+            Menu("Move to Folder") {
+                Button(action: {
+                    note.folderId = nil
+                    SensoryFeedback.buttonClicked()
+                }) {
+                    if note.folderId == nil {
+                        Label("None (Uncategorized)", systemImage: "checkmark")
+                    } else {
+                        Text("None (Uncategorized)")
+                    }
+                }
+                
+                if !WidgetWindowManager.shared.store.folders.isEmpty {
+                    Divider()
+                    ForEach(WidgetWindowManager.shared.store.folders) { folder in
+                        Button(action: {
+                            note.folderId = folder.id
+                            SensoryFeedback.buttonClicked()
+                        }) {
+                            if note.folderId == folder.id {
+                                Label(folder.name, systemImage: "checkmark")
+                            } else {
+                                Label(folder.name, systemImage: folder.icon)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Divider()
+            
             Button(role: .destructive, action: {
                 SensoryFeedback.taskDeleted()
                 onDelete()
@@ -474,7 +509,7 @@ public struct NoteCardView: View {
 
             // Right Button Group — 3D Frosted Group
             HStack(spacing: 12) {
-                // Download 4K Card Image Button (Universal 2400 × 2400 px for LinkedIn, Instagram, Twitter)
+                // Download 4K Card Image Button
                 Button(action: {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
                         isDownloaded = true
@@ -492,7 +527,7 @@ public struct NoteCardView: View {
                 }
                 .buttonStyle(.plain)
                 .onHover { isHoveringDownload = $0 }
-                .help(isDownloaded ? "Saved 4K Image to Downloads!" : "Download 4K Image (for LinkedIn, Instagram, Twitter)")
+                .help(isDownloaded ? "Saved 4K Image to Downloads!" : "Download 4K Image")
 
                 // Pin on Top / Wallpaper Canvas Toggle
                 Button(action: {
@@ -508,7 +543,7 @@ public struct NoteCardView: View {
                 }
                 .buttonStyle(.plain)
                 .onHover { isHoveringPin = $0 }
-                .help(note.isPinned ? "Pinned on Top (Click to stick to Wallpaper)" : "Pin on Top (Float above all windows)")
+                .help(note.isPinned ? "Pinned on Top (Click to stick to Wallpaper)" : "Pin on Top")
 
                 // Cycle Next Wallpaper in Pack
                 Button(action: {
@@ -635,7 +670,169 @@ public struct NoteCardView: View {
     @ViewBuilder
     private var bottomToolbar: some View {
         HStack {
+            // Folder Selection Capsule on the bottom-left opposite Add Group (Solid white background label)
+            Button(action: {
+                SensoryFeedback.buttonClicked()
+                showFolderPopover.toggle()
+            }) {
+                HStack(spacing: 6) {
+                    let assignedFolder = WidgetWindowManager.shared.store.folder(for: note.folderId)
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text(assignedFolder?.name ?? "Folder")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(Color.black.opacity(0.65))
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 38)
+                .background(Color.white, in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 0.75)
+                )
+                .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 1.5)
+            }
+            .buttonStyle(.plain)
+            .onHover { isHoveringFolderMenu = $0 }
+            .popover(isPresented: $showFolderPopover, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Select Folder")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 2)
+                    
+                    Button(action: {
+                        note.folderId = nil
+                        showFolderPopover = false
+                        SensoryFeedback.buttonClicked()
+                    }) {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                            Text("None (Uncategorized)")
+                                .font(.system(size: 12))
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if note.folderId == nil {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if !WidgetWindowManager.shared.store.folders.isEmpty {
+                        Divider()
+                            .padding(.vertical, 2)
+                        
+                        ForEach(WidgetWindowManager.shared.store.folders) { folder in
+                            Button(action: {
+                                note.folderId = folder.id
+                                showFolderPopover = false
+                                SensoryFeedback.buttonClicked()
+                            }) {
+                                HStack {
+                                    Image(systemName: "folder.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.accentColor)
+                                    Text(folder.name)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    if note.folderId == folder.id {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.accentColor)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    Divider()
+                        .padding(.vertical, 2)
+                    
+                    Button(action: {
+                        showFolderPopover = false
+                        showNewFolderDialog = true
+                        newFolderNameInput = ""
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 11.5))
+                                .foregroundColor(.accentColor)
+                            Text("New Folder...")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.accentColor)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(8)
+                .frame(width: 190)
+            }
+            .popover(isPresented: $showNewFolderDialog) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Create New Folder")
+                        .font(.system(size: 12, weight: .bold))
+                    
+                    TextField("Folder Name", text: $newFolderNameInput)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                        .onSubmit {
+                            let created = WidgetWindowManager.shared.store.createFolder(name: newFolderNameInput)
+                            note.folderId = created.id
+                            showNewFolderDialog = false
+                            SensoryFeedback.taskAdded()
+                        }
+                    
+                    HStack {
+                        Button("Cancel") {
+                            showNewFolderDialog = false
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button("Create") {
+                            let created = WidgetWindowManager.shared.store.createFolder(name: newFolderNameInput)
+                            note.folderId = created.id
+                            showNewFolderDialog = false
+                            SensoryFeedback.taskAdded()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                }
+                .padding(14)
+            }
+            .help("Assign to Folder")
+            .padding(.leading, 16)
+
             Spacer()
+
             // Single Direct "Add Group" Button
             Button(action: {
                 SensoryFeedback.widgetSpawned()
@@ -645,7 +842,7 @@ public struct NoteCardView: View {
                     .font(.system(size: 13, weight: .medium, design: .default))
                     .foregroundStyle(buttonIconColor)
                     .padding(.horizontal, 14)
-                    .frame(height: 40)
+                    .frame(height: 38)
                     .background(buttonBackgroundColor(hovering: isHoveringNewCard), in: Capsule())
                     .background(.ultraThinMaterial, in: Capsule())
                     .overlay(

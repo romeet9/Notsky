@@ -172,6 +172,17 @@ public struct DrawerShelfView: View {
                                     manager.closeWidget(noteId: note.id)
                                 }
                             )
+                        } else if note.cardType == .folders {
+                            FoldersCardView(
+                                note: $note,
+                                onSpawnWidget: {
+                                    let origin = manager.windowOrigin(for: note.id)
+                                    manager.spawnNewFoldersWidget(near: origin)
+                                },
+                                onDelete: {
+                                    manager.closeWidget(noteId: note.id)
+                                }
+                            )
                         } else if note.cardType == .notes {
                             FreeformNoteCardView(
                                 note: $note,
@@ -215,7 +226,7 @@ public struct DrawerShelfView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(isDark ? Color.white.opacity(0.85) : Color.black.opacity(0.75))
             
-            Text("Create your first task checklist or notes card.")
+            Text("Create your first task checklist, notes card, or folders.")
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(isDark ? Color.white.opacity(0.5) : Color.black.opacity(0.45))
             
@@ -243,6 +254,23 @@ public struct DrawerShelfView: View {
                         .frame(height: 36)
                         .background(isDark ? Color.white.opacity(0.15) : Color.black.opacity(0.08), in: Capsule())
                         .foregroundStyle(isDark ? Color.white : Color.black)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: {
+                    SensoryFeedback.widgetSpawned()
+                    manager.spawnNewFoldersWidget()
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 11))
+                        Text("Add Folders")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(height: 36)
+                    .background(Color.indigo.opacity(0.85), in: Capsule())
+                    .foregroundStyle(Color.white)
                 }
                 .buttonStyle(.plain)
 

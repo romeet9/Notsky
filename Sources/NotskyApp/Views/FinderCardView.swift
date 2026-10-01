@@ -19,6 +19,12 @@ public struct FinderCardView: View {
     @State private var showSettingsPopover: Bool = false
     @State private var apiKeyInput: String = ""
     
+    @State private var dragInitialWidth: Double? = nil
+    @State private var dragInitialHeight: Double? = nil
+    @State private var isHoveringResizeW: Bool = false
+    @State private var isHoveringResizeH: Bool = false
+    @State private var isHoveringResizeCorner: Bool = false
+    
     // Quick suggestion queries
     private let quickSuggestions = [
         "Find resume PDF",
@@ -33,6 +39,11 @@ public struct FinderCardView: View {
     private let headerHeight: CGFloat = 53
     private var sheetHeight: CGFloat { max(100, cardHeight - headerHeight) }
     private let cornerRadius: CGFloat = 40
+    
+    private let minCardWidth: Double = 281
+    private let maxCardWidth: Double = 586
+    private let minCardHeight: Double = 260
+    private let maxCardHeight: Double = 752
     
     private var isDark: Bool {
         if let override = settings.preferredColorScheme {
@@ -118,6 +129,10 @@ public struct FinderCardView: View {
             headerTitleCapsules
                 .frame(width: cardWidth, height: headerHeight)
                 .zIndex(10)
+            
+            // 4. Smooth Edge Resize Handles
+            resizeHandles
+                .zIndex(20)
         }
         .frame(width: cardWidth, height: cardHeight)
     }
@@ -163,7 +178,7 @@ public struct FinderCardView: View {
     // MARK: - Top Toolbar
     private var topToolbar: some View {
         HStack {
-            // Plus / New Chat Button (40 × 40 pt)
+            // Plus / New Chat Button (36 × 36 pt)
             Button(action: {
                 SensoryFeedback.buttonClicked()
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -171,9 +186,9 @@ public struct FinderCardView: View {
                 }
             }) {
                 Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(isDark ? .white.opacity(0.9) : .black.opacity(0.75))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
                     .background(buttonBackgroundColor(hovering: isHoveringPlus), in: Circle())
                     .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
             }
@@ -184,7 +199,7 @@ public struct FinderCardView: View {
             Spacer()
             
             // 4-Icon Action Cluster Pill
-            HStack(spacing: 14) {
+            HStack(spacing: 11) {
                 // 1. API Key & Model Settings
                 Button(action: {
                     SensoryFeedback.buttonClicked()
@@ -192,7 +207,7 @@ public struct FinderCardView: View {
                     showSettingsPopover.toggle()
                 }) {
                     Image(systemName: "key.fill")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundColor(AIFinderService.shared.apiKey.isEmpty ? (isDark ? .white.opacity(0.5) : .black.opacity(0.4)) : Color.green)
                 }
                 .buttonStyle(.plain)
@@ -235,7 +250,7 @@ public struct FinderCardView: View {
                     }
                 }) {
                     Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundColor(note.isPinned ? Color.orange : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
                 }
                 .buttonStyle(.plain)
@@ -246,7 +261,7 @@ public struct FinderCardView: View {
                     cycleWallpaper()
                 }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundColor(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -258,7 +273,7 @@ public struct FinderCardView: View {
                     selectCustomHeaderImage()
                 }) {
                     Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundColor(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -270,14 +285,14 @@ public struct FinderCardView: View {
                     onDelete()
                 }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12.5, weight: .medium))
                         .foregroundColor(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
                 .help("Delete Widget")
             }
-            .padding(.horizontal, 16)
-            .frame(height: 40)
+            .padding(.horizontal, 12)
+            .frame(height: 36)
             .background(buttonBackgroundColor(hovering: isHoveringTools), in: Capsule())
             .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
             .onHover { isHoveringTools = $0 }
@@ -400,12 +415,15 @@ public struct FinderCardView: View {
                 
                 if !msg.attachedFiles.isEmpty {
                     LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(), spacing: 10),
-                            GridItem(.flexible(), spacing: 10),
-                            GridItem(.flexible(), spacing: 10)
+                        columns: cardWidth >= 500 ? [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ] : [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
                         ],
-                        spacing: 10
+                        spacing: 8
                     ) {
                         ForEach(msg.attachedFiles) { file in
                             fileConceptASquareCard(file)
@@ -427,24 +445,24 @@ public struct FinderCardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
                     Image(systemName: fileIconName(for: file.fileType))
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(fileBadgeColor(for: file.fileType))
                     
                     Spacer(minLength: 4)
                     
                     if !file.fileSize.isEmpty {
                         Text(file.fileSize)
-                            .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
                             .foregroundColor(isDark ? Color.white.opacity(0.5) : Color.black.opacity(0.5))
                     }
                 }
                 
-                Spacer(minLength: 10)
+                Spacer(minLength: 8)
                 
-                HStack(alignment: .bottom, spacing: 6) {
+                HStack(alignment: .bottom, spacing: 4) {
                     Text(file.name)
-                        .font(.system(size: 14.5, weight: .regular, design: .default))
-                        .tracking(-0.35)
+                        .font(.system(size: 13, weight: .semibold, design: .default))
+                        .tracking(-0.3)
                         .foregroundStyle(isDark ? Color.white : Color.black)
                         .multilineTextAlignment(.leading)
                         .lineLimit(2)
@@ -452,19 +470,19 @@ public struct FinderCardView: View {
                     
                     if !file.formattedDate.isEmpty {
                         Text(file.formattedDate)
-                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
                             .foregroundColor(isDark ? Color.white.opacity(0.55) : Color.black.opacity(0.50))
                             .lineLimit(1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .bottomLeading)
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, minHeight: 135, maxHeight: 145)
-            .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(10)
+            .frame(maxWidth: .infinity, minHeight: 96, maxHeight: 116)
+            .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)
             )
             .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.03), radius: 5, x: 0, y: 1.5)
@@ -509,16 +527,16 @@ public struct FinderCardView: View {
     
     // MARK: - Bottom Floating Bar with Input Bar & Open Finder Button
     private var bottomFloatingBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // macOS Spotlight Style Input Bar
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.5))
                 
-                TextField("Ask notskyai or search files...", text: $inputText)
+                TextField("Ask notskyai or search...", text: $inputText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.system(size: 12.5, weight: .regular))
                     .onSubmit {
                         sendMessage()
                     }
@@ -526,50 +544,64 @@ public struct FinderCardView: View {
                 if !inputText.isEmpty {
                     Button(action: { sendMessage() }) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 22))
+                            .font(.system(size: 18))
                             .foregroundColor(isDark ? .white : .black)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(height: 44)
+            .padding(.horizontal, 10)
+            .frame(height: 36)
             .background(
                 isDark ? Color(white: 0.16).opacity(0.88) : Color.white.opacity(0.88),
-                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)
             )
-            .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 8, x: 0, y: 2)
+            .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
             
-            // "Open Finder" CTA Button (Height 44pt)
+            // "Open Finder" CTA Button (Height 36pt)
             Button(action: {
                 SensoryFeedback.buttonClicked()
                 NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser)
             }) {
-                Text("Open Finder")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
-                    .padding(.horizontal, 16)
-                    .frame(height: 44)
-                    .background(
-                        isDark ? Color(white: 0.18).opacity(isHoveringOpenFinder ? 0.95 : 0.88) : Color.white.opacity(isHoveringOpenFinder ? 0.95 : 0.88),
-                        in: Capsule()
-                    )
-                    .background(.thinMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
-                    .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 8, x: 0, y: 2)
+                if cardWidth < 340 {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
+                        .frame(width: 36, height: 36)
+                        .background(
+                            isDark ? Color(white: 0.18).opacity(isHoveringOpenFinder ? 0.95 : 0.88) : Color.white.opacity(isHoveringOpenFinder ? 0.95 : 0.88),
+                            in: Circle()
+                        )
+                        .background(.thinMaterial, in: Circle())
+                        .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                        .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
+                } else {
+                    Text("Open Finder")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
+                        .padding(.horizontal, 12)
+                        .frame(height: 36)
+                        .background(
+                            isDark ? Color(white: 0.18).opacity(isHoveringOpenFinder ? 0.95 : 0.88) : Color.white.opacity(isHoveringOpenFinder ? 0.95 : 0.88),
+                            in: Capsule()
+                        )
+                        .background(.thinMaterial, in: Capsule())
+                        .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                        .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
+                }
             }
             .buttonStyle(.plain)
             .onHover { isHoveringOpenFinder = $0 }
             .help("Open macOS Finder")
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 36)
-        .padding(.bottom, 16)
+        .padding(.horizontal, 12)
+        .padding(.top, 20)
+        .padding(.bottom, 12)
         .background(
             ZStack {
                 VisualEffectBlur(material: isDark ? .hudWindow : .underWindowBackground, blendingMode: .withinWindow)
@@ -664,6 +696,120 @@ public struct FinderCardView: View {
             }
             SensoryFeedback.buttonClicked()
         }
+    }
+    
+    // MARK: - Resize Drag Handles
+    @ViewBuilder
+    private var resizeHandles: some View {
+        // Right Edge
+        HStack {
+            Spacer()
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: 20, height: max(20, cardHeight - 20))
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            if dragInitialWidth == nil { dragInitialWidth = note.width }
+                            let base = dragInitialWidth ?? note.width
+                            let newW = max(minCardWidth, min(maxCardWidth, base + Double(value.translation.width)))
+                            if abs(note.width - newW) >= 0.5 {
+                                note.width = newW
+                                WidgetWindowManager.shared.updateWindowSize(for: note.id, newWidth: newW, newHeight: note.height)
+                            }
+                        }
+                        .onEnded { _ in
+                            dragInitialWidth = nil
+                            SensoryFeedback.buttonClicked()
+                        }
+                )
+                .onHover { inside in
+                    isHoveringResizeW = inside
+                    if inside {
+                        NSCursor.resizeLeftRight.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
+        }
+        .frame(width: cardWidth, height: cardHeight, alignment: .topTrailing)
+
+        // Bottom Edge
+        VStack {
+            Spacer()
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: max(20, cardWidth - 20), height: 20)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            if dragInitialHeight == nil { dragInitialHeight = note.height }
+                            let base = dragInitialHeight ?? note.height
+                            let newH = max(minCardHeight, min(maxCardHeight, base + Double(value.translation.height)))
+                            if abs(note.height - newH) >= 0.5 {
+                                note.height = newH
+                                WidgetWindowManager.shared.updateWindowSize(for: note.id, newWidth: note.width, newHeight: newH)
+                            }
+                        }
+                        .onEnded { _ in
+                            dragInitialHeight = nil
+                            SensoryFeedback.buttonClicked()
+                        }
+                )
+                .onHover { inside in
+                    isHoveringResizeH = inside
+                    if inside {
+                        NSCursor.resizeUpDown.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
+        }
+        .frame(width: cardWidth, height: cardHeight, alignment: .bottomLeading)
+
+        // Bottom-Right Corner
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 1)
+                            .onChanged { value in
+                                if dragInitialWidth == nil { dragInitialWidth = note.width }
+                                if dragInitialHeight == nil { dragInitialHeight = note.height }
+                                let baseW = dragInitialWidth ?? note.width
+                                let baseH = dragInitialHeight ?? note.height
+                                let newW = max(minCardWidth, min(maxCardWidth, baseW + Double(value.translation.width)))
+                                let newH = max(minCardHeight, min(maxCardHeight, baseH + Double(value.translation.height)))
+                                if abs(note.width - newW) >= 0.5 || abs(note.height - newH) >= 0.5 {
+                                    note.width = newW
+                                    note.height = newH
+                                    WidgetWindowManager.shared.updateWindowSize(for: note.id, newWidth: newW, newHeight: newH)
+                                }
+                            }
+                            .onEnded { _ in
+                                dragInitialWidth = nil
+                                dragInitialHeight = nil
+                                SensoryFeedback.buttonClicked()
+                            }
+                    )
+                    .onHover { inside in
+                        isHoveringResizeCorner = inside
+                        if inside {
+                            NSCursor.crosshair.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+            }
+        }
+        .frame(width: cardWidth, height: cardHeight, alignment: .bottomTrailing)
     }
 }
 

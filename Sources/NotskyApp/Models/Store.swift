@@ -2,9 +2,25 @@ import Foundation
 import SwiftUI
 import Observation
 
+public struct WorkspaceData: Codable {
+    public var notes: [NoteCard]
+    public var folders: [NoteFolder]?
+    
+    public init(notes: [NoteCard], folders: [NoteFolder]?) {
+        self.notes = notes
+        self.folders = folders
+    }
+}
+
 @Observable
 public final class NoteStore {
     public var notes: [NoteCard] = [] {
+        didSet {
+            scheduleAutoSave()
+        }
+    }
+    
+    public var folders: [NoteFolder] = [] {
         didSet {
             scheduleAutoSave()
         }
@@ -33,24 +49,36 @@ public final class NoteStore {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
-            let data = try encoder.encode(notes)
+            let workspace = WorkspaceData(notes: notes, folders: folders)
+            let data = try encoder.encode(workspace)
             try data.write(to: Self.storageURL, options: .atomic)
         } catch {
             print("Failed to persist Notsky workspace to disk: \(error)")
         }
     }
     
-    public static func loadFromDisk() -> [NoteCard]? {
+    public static func loadFromDisk() -> (notes: [NoteCard], folders: [NoteFolder])? {
         guard FileManager.default.fileExists(atPath: storageURL.path) else { return nil }
         do {
             let data = try Data(contentsOf: storageURL)
             let decoder = JSONDecoder()
-            let loaded = try decoder.decode([NoteCard].self, from: data)
-            return loaded.isEmpty ? nil : loaded
+            if let workspace = try? decoder.decode(WorkspaceData.self, from: data) {
+                return (workspace.notes, workspace.folders ?? [])
+            }
+            let legacyNotes = try decoder.decode([NoteCard].self, from: data)
+            return (legacyNotes, [])
         } catch {
             print("Failed to load Notsky workspace from disk: \(error)")
             return nil
         }
+    }
+
+    public static var defaultDemoFolders: [NoteFolder] {
+        return [
+            NoteFolder(name: "Projects", icon: "folder.fill"),
+            NoteFolder(name: "Personal", icon: "person.crop.circle.fill"),
+            NoteFolder(name: "Ideas", icon: "lightbulb.fill")
+        ]
     }
 
     public static var defaultDemoNoteContent: String {
@@ -90,9 +118,28 @@ public final class NoteStore {
     
     public init() {
         if let persisted = Self.loadFromDisk() {
-            self.notes = persisted
+            var loadedNotes = persisted.notes
+            for i in loadedNotes.indices {
+                switch loadedNotes[i].cardType {
+                case .tasks:
+                    loadedNotes[i].width = 281
+                    loadedNotes[i].height = 364
+                case .notes:
+                    loadedNotes[i].width = 586
+                    loadedNotes[i].height = 364
+                case .finder, .folders:
+                    loadedNotes[i].width = 360
+                    loadedNotes[i].height = 364
+                }
+            }
+            self.notes = loadedNotes
+            self.folders = persisted.folders.isEmpty ? Self.defaultDemoFolders : persisted.folders
+            saveToDisk()
             return
         }
+        
+        let demoFolders = Self.defaultDemoFolders
+        self.folders = demoFolders
         
         let packs = WallpaperPackManager.builtInPacks()
         let items = packs.first?.items ?? []
@@ -107,6 +154,7 @@ public final class NoteStore {
             title: "Tasks",
             headerImagePath: w0,
             items: [],
+            folderId: demoFolders.first?.id,
             gridCol: 0,
             gridRow: 0,
             width: 281,
@@ -121,6 +169,7 @@ public final class NoteStore {
             title: "Tasks",
             headerImagePath: w1,
             items: [],
+            folderId: demoFolders.indices.contains(1) ? demoFolders[1].id : nil,
             gridCol: 1,
             gridRow: 0,
             width: 281,
@@ -138,6 +187,7 @@ public final class NoteStore {
             activePageIndex: 0,
             headerImagePath: w2,
             items: [],
+            folderId: demoFolders.first?.id,
             gridCol: 0,
             gridRow: 1,
             width: 586,
@@ -153,14 +203,52 @@ public final class NoteStore {
             chatMessages: [],
             gridCol: 2,
             gridRow: 0,
-            width: 586,
-            height: 752
+            width: 360,
+            height: 364
         )
         
         self.notes = [card1, card2, card3, card4]
         saveToDisk()
     }
     
+    // MARK: - Folder Management
+    @discardableResult
+    public func createFolder(name: String, icon: String = "folder.fill", colorHex: String? = nil) -> NoteFolder {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let folderName = trimmed.isEmpty ? "New Folder" : trimmed
+        let newFolder = NoteFolder(name: folderName, icon: icon, colorHex: colorHex)
+        folders.append(newFolder)
+        return newFolder
+    }
+    
+    public func renameFolder(id: UUID, newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if let idx = folders.firstIndex(where: { $0.id == id }) {
+            folders[idx].name = trimmed
+        }
+    }
+    
+    public func deleteFolder(id: UUID) {
+        folders.removeAll { $0.id == id }
+        // Remove folder association from any notes
+        for i in notes.indices {
+            if notes[i].folderId == id {
+                notes[i].folderId = nil
+            }
+        }
+    }
+    
+    public func folder(for id: UUID?) -> NoteFolder? {
+        guard let id = id else { return nil }
+        return folders.first { $0.id == id }
+    }
+    
+    public func notes(in folderId: UUID?) -> [NoteCard] {
+        return notes.filter { $0.folderId == folderId && $0.cardType != .finder && $0.cardType != .folders }
+    }
+    
+    // MARK: - Card Actions
     public func addNote() {
         let count = notes.count
         let offset = Double(count * 40)
@@ -184,8 +272,6 @@ public final class NoteStore {
         let count = notes.count
         let offset = Double(count * 40)
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
-        // Width is sum of two cards (281 * 2) + space between them (24) = 586 pt
-        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
         let newCard = NoteCard(
             cardType: .notes,
             title: title,
@@ -196,7 +282,26 @@ public final class NoteStore {
             items: [],
             positionX: 120 + offset,
             positionY: 120 + offset,
-            width: doubleCardWidth,
+            width: 586,
+            height: 364
+        )
+        notes.append(newCard)
+    }
+    
+    public func addFoldersNote() {
+        let count = notes.count
+        let offset = Double(count * 40)
+        let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
+        let newCard = NoteCard(
+            cardType: .folders,
+            title: "Folders",
+            noteContent: "",
+            headerImagePath: nextWallpaper,
+            items: [],
+            chatMessages: [],
+            positionX: 120 + offset,
+            positionY: 120 + offset,
+            width: 360,
             height: 364
         )
         notes.append(newCard)
@@ -206,9 +311,6 @@ public final class NoteStore {
         let count = notes.count
         let offset = Double(count * 40)
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
-        // Width: 281 * 2 + 24 = 586 pt, Height: 364 * 2 + 24 = 752 pt
-        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
-        let doubleCardHeight: Double = 364.0 * 2.0 + 24.0
         let newCard = NoteCard(
             cardType: .finder,
             title: "Finder AI",
@@ -218,8 +320,8 @@ public final class NoteStore {
             chatMessages: [],
             positionX: 120 + offset,
             positionY: 120 + offset,
-            width: doubleCardWidth,
-            height: doubleCardHeight
+            width: 360,
+            height: 364
         )
         notes.append(newCard)
     }

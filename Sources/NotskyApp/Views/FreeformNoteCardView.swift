@@ -14,8 +14,9 @@ public enum MarkdownHelper {
         let baseItalic = fontManager.convert(baseRegular, toHaveTrait: .italicFontMask)
         let baseBoldItalic = fontManager.convert(baseBold, toHaveTrait: .italicFontMask)
         
+        let nsAttr: NSMutableAttributedString
         if let attributed = try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
-            let nsAttr = NSMutableAttributedString(attributed)
+            nsAttr = NSMutableAttributedString(attributed)
             let fullRange = NSRange(location: 0, length: nsAttr.length)
             
             nsAttr.enumerateAttribute(.font, in: fullRange, options: []) { value, subrange, _ in
@@ -37,21 +38,40 @@ public enum MarkdownHelper {
                 nsAttr.addAttribute(.font, value: font, range: subrange)
                 nsAttr.addAttribute(.foregroundColor, value: textColor, range: subrange)
             }
-            
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.lineSpacing = 3.5
-            nsAttr.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
-            return nsAttr
         } else {
-            let nsAttr = NSMutableAttributedString(string: markdown)
+            nsAttr = NSMutableAttributedString(string: markdown)
             let fullRange = NSRange(location: 0, length: nsAttr.length)
             nsAttr.addAttribute(.font, value: baseRegular, range: fullRange)
             nsAttr.addAttribute(.foregroundColor, value: textColor, range: fullRange)
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.lineSpacing = 3.5
-            nsAttr.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
-            return nsAttr
         }
+        
+        // Apply Apple Notes style hanging indents & paragraph spacing
+        let textStr = nsAttr.string as NSString
+        var lineStart = 0
+        while lineStart < textStr.length {
+            let lineRange = textStr.lineRange(for: NSRange(location: lineStart, length: 0))
+            let line = textStr.substring(with: lineRange)
+            let stripped = line.trimmingCharacters(in: .whitespaces)
+            
+            let pStyle = NSMutableParagraphStyle()
+            pStyle.lineSpacing = 3.5
+            pStyle.paragraphSpacing = 2.0
+            
+            let isBullet = stripped.hasPrefix("• ") || stripped.hasPrefix("◦ ") || stripped.hasPrefix("▪ ") || stripped.hasPrefix("☐ ") || stripped.hasPrefix("☑ ") || stripped.hasPrefix("› ") || stripped.hasPrefix("- ") || stripped.hasPrefix("* ")
+            let isNumbered = stripped.range(of: #"^\d+[\.\)]\s+"#, options: .regularExpression) != nil
+            
+            if isBullet || isNumbered {
+                let leadingSpaces = line.prefix(while: { $0 == " " || $0 == "\t" }).count
+                let baseIndent = CGFloat(leadingSpaces * 8 + 18)
+                pStyle.firstLineHeadIndent = CGFloat(leadingSpaces * 8)
+                pStyle.headIndent = baseIndent
+            }
+            
+            nsAttr.addAttribute(.paragraphStyle, value: pStyle, range: lineRange)
+            lineStart = lineRange.location + lineRange.length
+        }
+        
+        return nsAttr
     }
     
     public static func attributedStringToMarkdown(_ attr: NSAttributedString) -> String {
@@ -206,6 +226,252 @@ public final class NoteTextFormatController: ObservableObject {
     }
 }
 
+// MARK: - Native Mac Rich Text View with Apple Notes Engine
+final class NotskyRichTextView: NSTextView {
+    
+    // 1. Auto-Format on Space: - , * , + , 1. , [] , [x] , >
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        if let str = string as? String, str == " ", replacementRange.location == NSNotFound {
+            let selectedRange = self.selectedRange()
+            if selectedRange.length == 0 {
+                let fullText = (self.string as NSString)
+                if selectedRange.location <= fullText.length {
+                    let lineRange = fullText.lineRange(for: NSRange(location: selectedRange.location, length: 0))
+                    let lineTextBeforeCursor = fullText.substring(with: NSRange(location: lineRange.location, length: selectedRange.location - lineRange.location))
+                    
+                    let indent = lineTextBeforeCursor.prefix(while: { $0 == " " || $0 == "\t" })
+                    let stripped = String(lineTextBeforeCursor.dropFirst(indent.count))
+                    
+                    // Bullet list triggers: '-' or '*' or '+'
+                    if stripped == "-" || stripped == "*" || stripped == "+" {
+                        let replaceRange = NSRange(location: lineRange.location + indent.count, length: stripped.count)
+                        super.insertText("• ", replacementRange: replaceRange)
+                        SensoryFeedback.buttonClicked()
+                        return
+                    }
+                    
+                    // Checkbox triggers: '[]' or '[ ]'
+                    if stripped == "[]" || stripped == "[ ]" {
+                        let replaceRange = NSRange(location: lineRange.location + indent.count, length: stripped.count)
+                        super.insertText("☐ ", replacementRange: replaceRange)
+                        SensoryFeedback.buttonClicked()
+                        return
+                    }
+                    
+                    // Completed Checkbox: '[x]' or '[X]'
+                    if stripped == "[x]" || stripped == "[X]" {
+                        let replaceRange = NSRange(location: lineRange.location + indent.count, length: stripped.count)
+                        super.insertText("☑ ", replacementRange: replaceRange)
+                        SensoryFeedback.buttonClicked()
+                        return
+                    }
+                    
+                    // Blockquote / Arrow: '>'
+                    if stripped == ">" {
+                        let replaceRange = NSRange(location: lineRange.location + indent.count, length: stripped.count)
+                        super.insertText("› ", replacementRange: replaceRange)
+                        SensoryFeedback.buttonClicked()
+                        return
+                    }
+                    
+                    // Numbered list trigger: '1.' or '1)'
+                    if stripped == "1." || stripped == "1)" {
+                        let replaceRange = NSRange(location: lineRange.location + indent.count, length: stripped.count)
+                        super.insertText("1. ", replacementRange: replaceRange)
+                        SensoryFeedback.buttonClicked()
+                        return
+                    }
+                }
+            }
+        }
+        super.insertText(string, replacementRange: replacementRange)
+    }
+    
+    // 2. Return / Enter: Auto-continue list or Smart Exit on empty line
+    override func insertNewline(_ sender: Any?) {
+        let selectedRange = self.selectedRange()
+        let string = (self.string as NSString)
+        
+        guard selectedRange.location <= string.length else {
+            super.insertNewline(sender)
+            return
+        }
+        
+        let lineRange = string.lineRange(for: NSRange(location: selectedRange.location, length: 0))
+        let currentLine = string.substring(with: lineRange)
+        
+        let indent = currentLine.prefix(while: { $0 == " " || $0 == "\t" })
+        let stripped = currentLine.dropFirst(indent.count)
+        
+        // Bullets ("• ", "◦ ", "▪ ", "- ", "* ", "+ ", "› ")
+        let bulletSymbols = ["• ", "◦ ", "▪ ", "- ", "* ", "+ ", "› "]
+        for symbol in bulletSymbols {
+            if stripped.hasPrefix(symbol) {
+                let contentAfter = stripped.dropFirst(symbol.count).trimmingCharacters(in: .whitespacesAndNewlines)
+                if contentAfter.isEmpty {
+                    // Empty bullet: Exit list mode cleanly
+                    let prefixRange = NSRange(location: lineRange.location, length: min(lineRange.length, indent.count + symbol.count))
+                    if prefixRange.location + prefixRange.length <= string.length {
+                        self.insertText("", replacementRange: prefixRange)
+                        return
+                    }
+                } else {
+                    // Continue with next bullet on new line
+                    let nextBullet = "\n" + String(indent) + symbol
+                    self.insertText(nextBullet, replacementRange: selectedRange)
+                    return
+                }
+            }
+        }
+        
+        // Checkboxes ("☐ ", "☑ ")
+        let checkboxSymbols = ["☐ ", "☑ "]
+        for symbol in checkboxSymbols {
+            if stripped.hasPrefix(symbol) {
+                let contentAfter = stripped.dropFirst(symbol.count).trimmingCharacters(in: .whitespacesAndNewlines)
+                if contentAfter.isEmpty {
+                    // Exit checkbox mode
+                    let prefixRange = NSRange(location: lineRange.location, length: min(lineRange.length, indent.count + symbol.count))
+                    if prefixRange.location + prefixRange.length <= string.length {
+                        self.insertText("", replacementRange: prefixRange)
+                        return
+                    }
+                } else {
+                    // Insert new unchecked box
+                    let nextBox = "\n" + String(indent) + "☐ "
+                    self.insertText(nextBox, replacementRange: selectedRange)
+                    return
+                }
+            }
+        }
+        
+        // Numbered lists ("1. ", "2. ")
+        if let match = stripped.range(of: #"^(\d+)[\.\)]\s+"#, options: .regularExpression) {
+            let numPrefix = String(stripped[match])
+            let contentAfter = stripped.dropFirst(numPrefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
+            if contentAfter.isEmpty {
+                // Exit numbered list
+                let prefixRange = NSRange(location: lineRange.location, length: min(lineRange.length, indent.count + numPrefix.count))
+                if prefixRange.location + prefixRange.length <= string.length {
+                    self.insertText("", replacementRange: prefixRange)
+                    return
+                }
+            } else if let numDigits = numPrefix.components(separatedBy: CharacterSet(charactersIn: ".)")).first,
+                      let currentNum = Int(numDigits.trimmingCharacters(in: .whitespaces)) {
+                let separator = numPrefix.contains(")") ? ") " : ". "
+                let nextNum = currentNum + 1
+                let nextPrefix = "\n" + String(indent) + "\(nextNum)\(separator)"
+                self.insertText(nextPrefix, replacementRange: selectedRange)
+                return
+            }
+        }
+        
+        super.insertNewline(sender)
+    }
+    
+    // 3. Smart Backspace: Outdent or Un-bullet
+    override func deleteBackward(_ sender: Any?) {
+        let selectedRange = self.selectedRange()
+        let string = (self.string as NSString)
+        
+        if selectedRange.length == 0 && selectedRange.location > 0 && selectedRange.location <= string.length {
+            let lineRange = string.lineRange(for: NSRange(location: selectedRange.location, length: 0))
+            let currentLine = string.substring(with: lineRange)
+            let indent = currentLine.prefix(while: { $0 == " " || $0 == "\t" })
+            let stripped = currentLine.dropFirst(indent.count)
+            
+            // Check if cursor is right after list prefix
+            let listPrefixes = ["• ", "◦ ", "▪ ", "- ", "* ", "+ ", "☐ ", "☑ ", "› "]
+            for prefix in listPrefixes {
+                if stripped.hasPrefix(prefix) {
+                    let prefixEndLocation = lineRange.location + indent.count + prefix.count
+                    if selectedRange.location == prefixEndLocation {
+                        if indent.count >= 2 {
+                            let indentRange = NSRange(location: lineRange.location, length: 2)
+                            self.insertText("", replacementRange: indentRange)
+                            return
+                        } else {
+                            let removeRange = NSRange(location: lineRange.location, length: indent.count + prefix.count)
+                            self.insertText("", replacementRange: removeRange)
+                            return
+                        }
+                    }
+                }
+            }
+            
+            // Check numbered list prefix
+            if let match = stripped.range(of: #"^(\d+)[\.\)]\s+"#, options: .regularExpression) {
+                let numPrefix = String(stripped[match])
+                let prefixEndLocation = lineRange.location + indent.count + numPrefix.count
+                if selectedRange.location == prefixEndLocation {
+                    if indent.count >= 2 {
+                        let indentRange = NSRange(location: lineRange.location, length: 2)
+                        self.insertText("", replacementRange: indentRange)
+                        return
+                    } else {
+                        let removeRange = NSRange(location: lineRange.location, length: indent.count + numPrefix.count)
+                        self.insertText("", replacementRange: removeRange)
+                        return
+                    }
+                }
+            }
+        }
+        
+        super.deleteBackward(sender)
+    }
+    
+    // 4. Tab Key: Indent list level & cycle bullet style
+    override func insertTab(_ sender: Any?) {
+        let selectedRange = self.selectedRange()
+        let string = (self.string as NSString)
+        
+        if selectedRange.location <= string.length {
+            let lineRange = string.lineRange(for: selectedRange)
+            let currentLine = string.substring(with: lineRange)
+            
+            if currentLine.contains("• ") {
+                let replaced = currentLine.replacingOccurrences(of: "• ", with: "  ◦ ")
+                self.insertText(replaced, replacementRange: lineRange)
+                return
+            } else if currentLine.contains("◦ ") {
+                let replaced = currentLine.replacingOccurrences(of: "◦ ", with: "  ▪ ")
+                self.insertText(replaced, replacementRange: lineRange)
+                return
+            } else if currentLine.contains("▪ ") || currentLine.contains("☐ ") || currentLine.contains("☑ ") || currentLine.range(of: #"^\s*(\d+)[\.\)]\s+"#, options: .regularExpression) != nil {
+                let replaced = "  " + currentLine
+                self.insertText(replaced, replacementRange: lineRange)
+                return
+            }
+        }
+        
+        self.insertText("  ", replacementRange: selectedRange)
+    }
+    
+    // 5. Shift+Tab Key: Outdent list level
+    override func insertBacktab(_ sender: Any?) {
+        let selectedRange = self.selectedRange()
+        let string = (self.string as NSString)
+        
+        if selectedRange.location <= string.length {
+            let lineRange = string.lineRange(for: selectedRange)
+            let currentLine = string.substring(with: lineRange)
+            
+            if currentLine.hasPrefix("  ") {
+                var newLine = String(currentLine.dropFirst(2))
+                if newLine.hasPrefix("▪ ") {
+                    newLine = "◦ " + String(newLine.dropFirst(2))
+                } else if newLine.hasPrefix("◦ ") {
+                    newLine = "• " + String(newLine.dropFirst(2))
+                }
+                self.insertText(newLine, replacementRange: lineRange)
+                return
+            }
+        }
+        
+        super.insertBacktab(sender)
+    }
+}
+
 // MARK: - Native Mac Rich Text Editor Representable
 struct MacMarkdownTextEditor: NSViewRepresentable {
     @Binding var text: String
@@ -220,16 +486,29 @@ struct MacMarkdownTextEditor: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
+        let scrollView = NSScrollView(frame: .zero)
         scrollView.drawsBackground = false
         scrollView.borderType = .noBorder
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
 
-        guard let textView = scrollView.documentView as? NSTextView else {
-            return scrollView
-        }
+        let contentSize = scrollView.contentSize
+        let textStorage = NSTextStorage()
+        let layoutManager = NSLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+        let textContainer = NSTextContainer(containerSize: NSSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.widthTracksTextView = true
+        layoutManager.addTextContainer(textContainer)
+
+        let textView = NotskyRichTextView(frame: NSRect(origin: .zero, size: contentSize), textContainer: textContainer)
+        textView.minSize = NSSize(width: 0, height: contentSize.height)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
 
         textView.delegate = context.coordinator
         textView.drawsBackground = false
@@ -248,11 +527,12 @@ struct MacMarkdownTextEditor: NSViewRepresentable {
         formatController.fontSize = fontSize
         formatController.textColor = textColor
 
+        scrollView.documentView = textView
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard let textView = nsView.documentView as? NotskyRichTextView else { return }
         
         context.coordinator.parent = self
         formatController.textView = textView
@@ -315,6 +595,10 @@ public struct FreeformNoteCardView: View {
     @State private var isHoveringGallery: Bool = false
     @State private var isHoveringTrash: Bool = false
     @State private var isHoveringNewCard: Bool = false
+    @State private var isHoveringFolderMenu: Bool = false
+    @State private var showFolderPopover: Bool = false
+    @State private var showNewFolderDialog: Bool = false
+    @State private var newFolderNameInput: String = ""
     @State private var isHoveringResizeW: Bool = false
     @State private var isHoveringResizeH: Bool = false
     @State private var isHoveringResizeCorner: Bool = false
@@ -330,7 +614,8 @@ public struct FreeformNoteCardView: View {
         !settings.autoHideControls || isHoveringCard
     }
     
-    // Width defaults to sum of 2 cards + 24pt spacing: 281 * 2 + 24 = 586 pt
+    // Width & Height driven by note model:
+    // Default: 281 × 364 pt. Max: 586 × 752 pt.
     private var cardWidth: CGFloat { CGFloat(note.width) }
     private var cardHeight: CGFloat { CGFloat(note.height) }
     private let headerHeight: CGFloat = 53
@@ -345,12 +630,12 @@ public struct FreeformNoteCardView: View {
         .spring(response: 0.44, dampingFraction: 0.64, blendDuration: 0.16)
     }
     
-    private let minCardWidth: Double = 360
+    private let minCardWidth: Double = 281
     private let maxCardWidth: Double = 860
     private let minCardHeight: Double = 260
-    private let maxCardHeight: Double = 800
+    private let maxCardHeight: Double = 752
     
-    private var contentWidth: CGFloat { max(240, cardWidth - 46) }
+    private var contentWidth: CGFloat { max(200, cardWidth - 46) }
     private var toolbarWidth: CGFloat { max(220, cardWidth - 28) }
     
     // MARK: - Adaptive Styling & Optical Depth
@@ -556,6 +841,37 @@ public struct FreeformNoteCardView: View {
             
             Divider()
             
+            Menu("Move to Folder") {
+                Button(action: {
+                    note.folderId = nil
+                    SensoryFeedback.buttonClicked()
+                }) {
+                    if note.folderId == nil {
+                        Label("None (Uncategorized)", systemImage: "checkmark")
+                    } else {
+                        Text("None (Uncategorized)")
+                    }
+                }
+                
+                if !WidgetWindowManager.shared.store.folders.isEmpty {
+                    Divider()
+                    ForEach(WidgetWindowManager.shared.store.folders) { folder in
+                        Button(action: {
+                            note.folderId = folder.id
+                            SensoryFeedback.buttonClicked()
+                        }) {
+                            if note.folderId == folder.id {
+                                Label(folder.name, systemImage: "checkmark")
+                            } else {
+                                Label(folder.name, systemImage: folder.icon)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Divider()
+            
             Button(role: .destructive, action: {
                 SensoryFeedback.taskDeleted()
                 onDelete()
@@ -709,7 +1025,7 @@ public struct FreeformNoteCardView: View {
         isDark ? Color.white : Color.black
     }
 
-    // MARK: - 2. Top Toolbar (Top-Left Formatting + Top-Right Action Capsule)
+    // MARK: - 2. Top Toolbar (Top-Left Formatting & Folder Menu + Top-Right Action Capsule)
     @ViewBuilder
     private var topToolbar: some View {
         HStack {
@@ -900,30 +1216,192 @@ public struct FreeformNoteCardView: View {
         note.pages.count < 3
     }
 
-    // MARK: - 4. Bottom Toolbar (Capsule Stats Label & Single Add Card Button)
+    // MARK: - 4. Bottom Toolbar (Folder Label, Capsule Stats Label & Single Add Card Button)
     @ViewBuilder
     private func bottomToolbar(for index: Int) -> some View {
         let content = note.pages.indices.contains(index) ? note.pages[index].content : ""
         let words = wordCount(for: content)
         let chars = charCount(for: content)
         
-        HStack {
-            // Word & Character count label inside 40pt Capsule — ALWAYS VISIBLE
-            HStack(spacing: 4) {
-                Text("\(words) \(words == 1 ? "word" : "words"), \(chars) \(chars == 1 ? "character" : "characters")")
-                    .font(.system(size: 13, weight: .medium, design: .default))
-                    .foregroundStyle(taskTextColor.opacity(0.88))
+        HStack(spacing: 8) {
+            // Folder Selection Capsule on the bottom-left opposite Add Card (Solid white background label)
+            Button(action: {
+                SensoryFeedback.buttonClicked()
+                showFolderPopover.toggle()
+            }) {
+                HStack(spacing: 6) {
+                    let assignedFolder = WidgetWindowManager.shared.store.folder(for: note.folderId)
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text(assignedFolder?.name ?? "Folder")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(Color.black.opacity(0.65))
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 38)
+                .background(Color.white, in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(Color.white.opacity(0.9), lineWidth: 0.75)
+                )
+                .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 1.5)
             }
-            .padding(.horizontal, 14)
-            .frame(height: 40)
-            .background(sheetBackgroundColor, in: Capsule())
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-            )
-            .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+            .buttonStyle(.plain)
+            .onHover { isHoveringFolderMenu = $0 }
+            .popover(isPresented: $showFolderPopover, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Select Folder")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 2)
+                    
+                    Button(action: {
+                        note.folderId = nil
+                        showFolderPopover = false
+                        SensoryFeedback.buttonClicked()
+                    }) {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                            Text("None (Uncategorized)")
+                                .font(.system(size: 12))
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if note.folderId == nil {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if !WidgetWindowManager.shared.store.folders.isEmpty {
+                        Divider()
+                            .padding(.vertical, 2)
+                        
+                        ForEach(WidgetWindowManager.shared.store.folders) { folder in
+                            Button(action: {
+                                note.folderId = folder.id
+                                showFolderPopover = false
+                                SensoryFeedback.buttonClicked()
+                            }) {
+                                HStack {
+                                    Image(systemName: "folder.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.accentColor)
+                                    Text(folder.name)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    if note.folderId == folder.id {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.accentColor)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    Divider()
+                        .padding(.vertical, 2)
+                    
+                    Button(action: {
+                        showFolderPopover = false
+                        showNewFolderDialog = true
+                        newFolderNameInput = ""
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 11.5))
+                                .foregroundColor(.accentColor)
+                            Text("New Folder...")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.accentColor)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(8)
+                .frame(width: 190)
+            }
+            .popover(isPresented: $showNewFolderDialog) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Create New Folder")
+                        .font(.system(size: 12, weight: .bold))
+                    
+                    TextField("Folder Name", text: $newFolderNameInput)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 200)
+                        .onSubmit {
+                            let created = WidgetWindowManager.shared.store.createFolder(name: newFolderNameInput)
+                            note.folderId = created.id
+                            showNewFolderDialog = false
+                            SensoryFeedback.taskAdded()
+                        }
+                    
+                    HStack {
+                        Button("Cancel") {
+                            showNewFolderDialog = false
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button("Create") {
+                            let created = WidgetWindowManager.shared.store.createFolder(name: newFolderNameInput)
+                            note.folderId = created.id
+                            showNewFolderDialog = false
+                            SensoryFeedback.taskAdded()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                }
+                .padding(14)
+            }
+            .help("Assign to Folder")
             .padding(.leading, 16)
+
+            // Word & Character count label inside 38pt Capsule — visible when width permits
+            if cardWidth >= 380 || !showControls {
+                HStack(spacing: 4) {
+                    Text("\(words) \(words == 1 ? "word" : "words"), \(chars) \(chars == 1 ? "char" : "chars")")
+                        .font(.system(size: 12, weight: .medium, design: .default))
+                        .foregroundStyle(taskTextColor.opacity(0.88))
+                }
+                .padding(.horizontal, 11)
+                .frame(height: 38)
+                .background(sheetBackgroundColor, in: Capsule())
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(specularBorderGradient, lineWidth: 0.75)
+                )
+                .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
+            }
 
             Spacer()
 
@@ -941,7 +1419,7 @@ public struct FreeformNoteCardView: View {
                         .font(.system(size: 13, weight: .medium, design: .default))
                         .foregroundStyle(buttonIconColor)
                         .padding(.horizontal, 14)
-                        .frame(height: 40)
+                        .frame(height: 38)
                         .background(buttonBackgroundColor(hovering: isHoveringNewCard), in: Capsule())
                         .background(.ultraThinMaterial, in: Capsule())
                         .overlay(

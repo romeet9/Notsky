@@ -371,10 +371,10 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil) {
         let newId = UUID()
-        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
+        let cardWidth: Double = 586.0
         let targetHeight: Double = 364.0
         
-        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: doubleCardWidth, cardHeight: targetHeight, existingNotes: store.notes)
+        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: cardWidth, cardHeight: targetHeight, existingNotes: store.notes)
         let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(targetHeight))
         
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -391,7 +391,7 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             gridRow: slot.row,
             positionX: spawnOrigin.x,
             positionY: spawnOrigin.y,
-            width: doubleCardWidth,
+            width: cardWidth,
             height: targetHeight
         )
         
@@ -401,11 +401,11 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
     
     public func spawnNewFinderWidget(near origin: CGPoint? = nil) {
         let newId = UUID()
-        let doubleCardWidth: Double = 281.0 * 2.0 + 24.0
-        let doubleCardHeight: Double = 364.0 * 2.0 + 24.0
+        let cardWidth: Double = 360.0
+        let cardHeight: Double = 364.0
         
-        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: doubleCardWidth, cardHeight: doubleCardHeight, existingNotes: store.notes)
-        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(doubleCardHeight))
+        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: cardWidth, cardHeight: cardHeight, existingNotes: store.notes)
+        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(cardHeight))
         
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         let newNote = NoteCard(
@@ -415,17 +415,65 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             noteContent: "",
             headerImagePath: nextWallpaper,
             items: [],
+            gridCol: slot.col,
+            gridRow: slot.row,
+            positionX: spawnOrigin.x,
+            positionY: spawnOrigin.y,
+            width: cardWidth,
+            height: cardHeight
+        )
+        
+        store.notes.append(newNote)
+        openWidgetWindow(for: newId, at: spawnOrigin)
+    }
+    
+    public func spawnNewFoldersWidget(near origin: CGPoint? = nil) {
+        let newId = UUID()
+        let cardWidth: Double = 360.0
+        let cardHeight: Double = 364.0
+        
+        let slot = GridSnapManager.shared.findNextAvailableSlot(cardWidth: cardWidth, cardHeight: cardHeight, existingNotes: store.notes)
+        let spawnOrigin = GridSnapManager.shared.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(cardHeight))
+        
+        let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
+        let newNote = NoteCard(
+            id: newId,
+            cardType: .folders,
+            title: "Folders",
+            noteContent: "",
+            headerImagePath: nextWallpaper,
+            items: [],
             chatMessages: [],
             gridCol: slot.col,
             gridRow: slot.row,
             positionX: spawnOrigin.x,
             positionY: spawnOrigin.y,
-            width: doubleCardWidth,
-            height: doubleCardHeight
+            width: cardWidth,
+            height: cardHeight
         )
         
         store.notes.append(newNote)
         openWidgetWindow(for: newId, at: spawnOrigin)
+    }
+    
+    public func focusWidget(for noteId: UUID) {
+        if let controller = windowControllers[noteId], let window = controller.window {
+            window.orderFront(nil)
+            window.makeKeyAndOrderFront(nil)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.15
+                window.animator().alphaValue = 0.7
+            } completionHandler: {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.15
+                    window.animator().alphaValue = 1.0
+                }
+            }
+        } else if let note = store.notes.first(where: { $0.id == noteId }) {
+            let cardH = CGFloat(note.height)
+            let origin = GridSnapManager.shared.cardOrigin(forCol: note.gridCol, row: note.gridRow, cardHeight: cardH)
+            openWidgetWindow(for: noteId, at: origin)
+        }
     }
     
     public func closeWidget(noteId: UUID) {
@@ -537,8 +585,8 @@ public final class WidgetWindowManager: NSObject, ObservableObject {
             chatMessages: [],
             gridCol: 2,
             gridRow: 0,
-            width: 586,
-            height: 752
+            width: 360,
+            height: 364
         )
         
         store.notes = [card1, card2, card3, card4]

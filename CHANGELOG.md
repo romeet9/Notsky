@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.10] - 2026-09-23
+
+### What's Changed
+- **New Wallpaper Pack: macOS 27 Stock**: Added the official macOS 27 stock wallpapers (macOS 27 Dark Twilight, macOS 27 Light Solstice) with dynamic ambient luminance and contrast tinting.
+- **macOS 27 Compatibility**: Verified build, desktop widget persistence, and settings integration for macOS 27.
+
 ## [1.0.9] - 2026-09-23
 
 ### What's Changed

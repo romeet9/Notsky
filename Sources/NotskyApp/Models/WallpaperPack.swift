@@ -680,6 +680,29 @@ public final class WallpaperPackManager {
                         accentHue: 0.70
                     )
                 ]
+            ),
+            
+            // Pack: macOS 27 Stock Wallpapers
+            WallpaperPack(
+                id: "macos27_stock",
+                name: "macOS 27 Stock",
+                description: "Official macOS 27 dynamic dark twilight and warm solstice stock wallpapers.",
+                items: [
+                    WallpaperItem(
+                        id: "macos27_dark",
+                        name: "macOS 27 Dark Twilight",
+                        path: wallpaperPath("macos27/macos27_dark.jpg"),
+                        gradientColors: [Color(red: 0.18, green: 0.16, blue: 0.32), Color(red: 0.08, green: 0.06, blue: 0.16)],
+                        accentHue: 0.72
+                    ),
+                    WallpaperItem(
+                        id: "macos27_light",
+                        name: "macOS 27 Light Solstice",
+                        path: wallpaperPath("macos27/macos27_light.jpg"),
+                        gradientColors: [Color(red: 0.95, green: 0.75, blue: 0.55), Color(red: 0.65, green: 0.40, blue: 0.25)],
+                        accentHue: 0.08
+                    )
+                ]
             )
         ]
     }

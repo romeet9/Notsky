@@ -9,15 +9,33 @@ public struct WidgetRootView: View {
         self.noteId = noteId
     }
     
+    private var safeNoteBinding: Binding<NoteCard>? {
+        guard let index = manager.store.notes.firstIndex(where: { $0.id == noteId }) else {
+            return nil
+        }
+        return Binding<NoteCard>(
+            get: {
+                if let currentIdx = manager.store.notes.firstIndex(where: { $0.id == noteId }) {
+                    return manager.store.notes[currentIdx]
+                }
+                return NoteCard(id: noteId, cardType: .tasks, title: "", headerImagePath: "")
+            },
+            set: { newValue in
+                if let currentIdx = manager.store.notes.firstIndex(where: { $0.id == noteId }) {
+                    manager.store.notes[currentIdx] = newValue
+                }
+            }
+        )
+    }
+    
     public var body: some View {
-        if let index = manager.store.notes.firstIndex(where: { $0.id == noteId }) {
+        if let binding = safeNoteBinding {
+            let note = binding.wrappedValue
             ZStack(alignment: .topLeading) {
-                if manager.store.notes[index].cardType == .finder {
+                switch note.cardType {
+                case .finder:
                     FinderCardView(
-                        note: Binding(
-                            get: { manager.store.notes[index] },
-                            set: { manager.store.notes[index] = $0 }
-                        ),
+                        note: binding,
                         onSpawnWidget: {
                             let origin = manager.windowOrigin(for: noteId)
                             manager.spawnNewWidget(near: origin)
@@ -27,12 +45,21 @@ public struct WidgetRootView: View {
                         }
                     )
                     .padding(30)
-                } else if manager.store.notes[index].cardType == .notes {
+                case .folders:
+                    FoldersCardView(
+                        note: binding,
+                        onSpawnWidget: {
+                            let origin = manager.windowOrigin(for: noteId)
+                            manager.spawnNewFoldersWidget(near: origin)
+                        },
+                        onDelete: {
+                            manager.closeWidget(noteId: noteId)
+                        }
+                    )
+                    .padding(30)
+                case .notes:
                     FreeformNoteCardView(
-                        note: Binding(
-                            get: { manager.store.notes[index] },
-                            set: { manager.store.notes[index] = $0 }
-                        ),
+                        note: binding,
                         onSpawnWidget: {
                             let origin = manager.windowOrigin(for: noteId)
                             manager.spawnNewFreeformNoteWidget(near: origin)
@@ -42,12 +69,9 @@ public struct WidgetRootView: View {
                         }
                     )
                     .padding(30)
-                } else {
+                case .tasks:
                     NoteCardView(
-                        note: Binding(
-                            get: { manager.store.notes[index] },
-                            set: { manager.store.notes[index] = $0 }
-                        ),
+                        note: binding,
                         onSpawnWidget: {
                             let origin = manager.windowOrigin(for: noteId)
                             manager.spawnNewWidget(near: origin)
@@ -60,8 +84,8 @@ public struct WidgetRootView: View {
                 }
             }
             .frame(
-                width: CGFloat(manager.store.notes[index].width + 60),
-                height: CGFloat(manager.store.notes[index].height + 60),
+                width: CGFloat(note.width + 60),
+                height: CGFloat(note.height + 60),
                 alignment: .topLeading
             )
             .preferredColorScheme(settings.preferredColorScheme)
@@ -70,3 +94,4 @@ public struct WidgetRootView: View {
         }
     }
 }
+

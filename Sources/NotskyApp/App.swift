@@ -196,6 +196,11 @@ struct MenuBarContentView: View {
         }
         .keyboardShortcut("n", modifiers: [.command, .shift])
 
+        Button("New Folders Card") {
+            manager.spawnNewFoldersWidget()
+        }
+        .keyboardShortcut("f", modifiers: [.command, .shift])
+
         Divider()
 
         Button("Clear Workspace") {

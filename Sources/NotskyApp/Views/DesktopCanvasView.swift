@@ -32,14 +32,43 @@ public struct DesktopCanvasView: View {
             ScrollView([.horizontal, .vertical]) {
                 HStack(alignment: .top, spacing: 32) {
                     ForEach($store.notes) { $note in
-                        NoteCardView(
-                            note: $note,
-                            onDelete: {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    store.deleteNote(id: note.id)
+                        if note.cardType == .finder {
+                            FinderCardView(
+                                note: $note,
+                                onDelete: {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        store.deleteNote(id: note.id)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        } else if note.cardType == .folders {
+                            FoldersCardView(
+                                note: $note,
+                                onDelete: {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        store.deleteNote(id: note.id)
+                                    }
+                                }
+                            )
+                        } else if note.cardType == .notes {
+                            FreeformNoteCardView(
+                                note: $note,
+                                onDelete: {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        store.deleteNote(id: note.id)
+                                    }
+                                }
+                            )
+                        } else {
+                            NoteCardView(
+                                note: $note,
+                                onDelete: {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        store.deleteNote(id: note.id)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(48)
@@ -55,7 +84,37 @@ public struct DesktopCanvasView: View {
                             store.addNote()
                         }
                     }) {
-                        Label("New Note", systemImage: "plus.circle.fill")
+                        Label("New Task Group", systemImage: "plus.circle.fill")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5))
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+
+                    Button(action: {
+                        withAnimation(.spring(duration: 0.35)) {
+                            store.addFreeformNote()
+                        }
+                    }) {
+                        Label("New Notes Card", systemImage: "doc.text.fill")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5))
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+
+                    Button(action: {
+                        withAnimation(.spring(duration: 0.35)) {
+                            store.addFoldersNote()
+                        }
+                    }) {
+                        Label("New Folders", systemImage: "folder.fill")
                             .font(.system(size: 13, weight: .medium))
                     }
                     .buttonStyle(.plain)

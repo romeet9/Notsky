@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notsky Chat Widget × Google Chat Bridge Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&display=swap');
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Wallpaper Themes */
+    .bg-sonoma {
+      background: radial-gradient(circle at 20% 20%, #4a2574 0%, #171026 50%, #0c0817 100%),
+                  radial-gradient(circle at 80% 80%, #d85c3f 0%, transparent 60%),
+                  radial-gradient(circle at 50% 30%, #2f6bf0 0%, transparent 50%);
+      background-size: cover;
+    }
+    
+    .bg-sequoia {
+      background: radial-gradient(circle at 10% 30%, #1b3a4b 0%, #0d1b2a 60%),
+                  radial-gradient(circle at 90% 70%, #d4a373 0%, transparent 50%),
+                  radial-gradient(circle at 50% 90%, #606c38 0%, transparent 60%);
+    }
+
+    .bg-monterey {
+      background: radial-gradient(circle at 80% 20%, #8338ec 0%, #3a0ca3 40%, #10002b 100%),
+                  radial-gradient(circle at 20% 80%, #ff006e 0%, transparent 50%);
+    }
+
+    .bg-mesh-light {
+      background: radial-gradient(circle at 20% 20%, #e0e7ff 0%, #f1f5f9 60%, #e2e8f0 100%),
+                  radial-gradient(circle at 80% 80%, #fed7aa 0%, transparent 50%),
+                  radial-gradient(circle at 50% 30%, #bae6fd 0%, transparent 50%);
+    }
+
+    /* Authentic Liquid Glass Styling Tokens */
+    .notsky-glass-dark {
+      background: rgba(30, 30, 36, 0.78);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.55),
+                  0 0 0 1px rgba(255, 255, 255, 0.12),
+                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .notsky-glass-light {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.18),
+                  0 0 0 1px rgba(255, 255, 255, 0.65),
+                  inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .notsky-pill-dark {
+      background: rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(16px);
+      border: 0.75px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.4);
+    }
+
+    .notsky-pill-light {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(16px);
+      border: 0.75px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), inset 0 0.5px 0.5px #fff;
+    }
+
+    .notsky-user-bubble-dark {
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(20px);
+      border: 0.75px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .notsky-user-bubble-light {
+      background: rgba(0, 0, 0, 0.07);
+      backdrop-filter: blur(20px);
+      border: 0.75px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-dot {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .dot-1 { animation: bounce-slow 1s infinite 0ms; }
+    .dot-2 { animation: bounce-slow 1s infinite 200ms; }
+    .dot-3 { animation: bounce-slow 1s infinite 400ms; }
+  </style>
+</head>
+<body class="m-0 p-0 overflow-x-hidden min-h-screen transition-all duration-700 bg-sonoma" id="bodyRoot">
+
+  <div class="max-w-7xl mx-auto px-4 py-8 min-h-screen flex flex-col justify-between">
+    
+    <!-- Top Demo Navigation Bar -->
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg text-white font-bold text-lg">
+          ✨
+        </div>
+        <div>
+          <h1 class="text-white text-lg font-bold tracking-tight drop-shadow">Notsky Spatial Chat</h1>
+          <p class="text-xs text-white/70 font-medium">Liquid-Glass Desktop Material × Google Chat Workspace Bridge</p>
+        </div>
+      </div>
+
+      <!-- Controls & Wallpaper Switcher -->
+      <div class="flex items-center gap-2 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/15 text-xs text-white">
+        <span class="px-2.5 py-1 text-white/60 font-medium">Wallpaper:</span>
+        <button onclick="setTheme('bg-sonoma')" class="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition text-white font-medium">Sonoma</button>
+        <button onclick="setTheme('bg-sequoia')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition text-white font-medium">Sequoia</button>
+        <button onclick="setTheme('bg-monterey')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition text-white font-medium">Monterey</button>
+        <button onclick="setTheme('bg-mesh-light')" class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition text-white font-medium">Light Mesh</button>
+        <div class="h-4 w-px bg-white/20 mx-1"></div>
+        <button onclick="toggleDarkMode()" id="modeBtn" class="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 transition text-white font-medium flex items-center gap-1.5">
+          <span>🌙</span> <span id="modeText">Dark Glass</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dual Split -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-auto">
+      
+      <!-- LEFT: The Notsky Widget (macOS Spatial Card) -->
+      <div class="lg:col-span-6 flex flex-col items-center justify-center">
+        <div class="text-center mb-3">
+          <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 backdrop-blur">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Visitor Perspective (Website Widget)
+          </span>
+        </div>
+
+        <!-- The Exact Notsky Spatial Card -->
+        <div id="notskyCard" class="w-full max-w-[420px] h-[590px] rounded-[36px] notsky-glass-dark relative flex flex-col overflow-hidden transition-all duration-300 shadow-2xl">
+          
+          <!-- Top 53pt Space with Notsky Dual Header Capsules -->
+          <div class="h-[58px] px-4 flex items-center justify-center relative shrink-0">
+            
+            <div class="flex items-center gap-2">
+              <!-- Left Capsule: Brand & Logo -->
+              <div id="brandCapsule" class="h-9 px-4 rounded-full notsky-pill-dark flex items-center gap-1.5 shadow-md">
+                <span class="text-red-500 text-xs font-semibold">✨</span>
+                <span id="brandTitle" class="text-xs font-semibold text-white tracking-tight">notskyai</span>
+                <span class="text-[10px] text-white/40 font-mono">× Google Chat</span>
+              </div>
+
+              <!-- Right Capsule: Live State Indicator -->
+              <div id="statusCapsule" class="h-9 px-3.5 rounded-full notsky-pill-dark flex items-center gap-2 shadow-md">
+                <div class="relative flex items-center justify-center">
+                  <div id="statusDotPulse" class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot absolute"></div>
+                  <div id="statusDot" class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                </div>
+                <span id="statusLabel" class="text-xs font-medium text-white/90 font-rounded">team ready</span>
+              </div>
+            </div>
+
+            <!-- Top Right Window Controls -->
+            <button onclick="resetConversation()" title="New Chat" class="absolute right-4 w-9 h-9 rounded-full notsky-pill-dark hover:scale-105 active:scale-95 transition flex items-center justify-center text-white/80 hover:text-white">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            </button>
+          </div>
+
+          <!-- Chat Conversation Scroll Area -->
+          <div id="chatMessages" class="flex-1 overflow-y-auto px-4 py-2 space-y-3.5 no-scrollbar flex flex-col">
+            
+            <!-- Empty State / Welcome Screen -->
+            <div id="emptyState" class="my-auto py-4 space-y-4">
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">💬</span>
+                  <h3 id="welcomeTitle" class="text-sm font-semibold text-white">Live Support & Sales</h3>
+                </div>
+                <p id="welcomeSubtitle" class="text-xs text-white/70 leading-relaxed">
+                  Send a message below. Your chat routes directly into our company Google Chat room in real time.
+                </p>
+              </div>
+
+              <!-- Suggested Quick Chips -->
+              <div class="space-y-2 pt-1">
+                <p class="text-[11px] font-medium text-white/50 uppercase tracking-wider">Suggested questions:</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="sendQuickPrompt('Can I see pricing and plans?')" class="text-left text-xs p-2.5 rounded-2xl notsky-pill-dark hover:bg-white/20 transition text-white/90 leading-tight">
+                    💳 Pricing & Plans
+                  </button>
+                  <button onclick="sendQuickPrompt('How does the Google Chat integration work?')" class="text-left text-xs p-2.5 rounded-2xl notsky-pill-dark hover:bg-white/20 transition text-white/90 leading-tight">
+                    ⚡ Integration FAQ
+                  </button>
+                  <button onclick="sendQuickPrompt('I would like to schedule a product demo.')" class="text-left text-xs p-2.5 rounded-2xl notsky-pill-dark hover:bg-white/20 transition text-white/90 leading-tight">
+                    📅 Book a Demo
+                  </button>
+                  <button onclick="sendQuickPrompt('Is our conversation encrypted and private?')" class="text-left text-xs p-2.5 rounded-2xl notsky-pill-dark hover:bg-white/20 transition text-white/90 leading-tight">
+                    🔒 Privacy & Security
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Typing Indicator -->
+          <div id="typingIndicator" class="hidden px-5 py-2 flex items-center gap-2 text-xs text-white/70">
+            <div class="flex items-center gap-1 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/15">
+              <span class="w-1.5 h-1.5 rounded-full bg-white/80 dot-1"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-white/80 dot-2"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-white/80 dot-3"></span>
+              <span class="ml-1 text-[11px] font-medium text-white/80" id="typingText">Romeet typing in Google Chat...</span>
+            </div>
+          </div>
+
+          <!-- Bottom Spotlight Floating Bar -->
+          <div class="p-3 shrink-0">
+            <form onsubmit="handleUserSubmit(event)" class="flex items-center gap-2">
+              
+              <!-- Spotlight Style Input Bar -->
+              <div id="inputBar" class="flex-1 h-11 px-3.5 rounded-full notsky-pill-dark flex items-center gap-2.5 shadow-lg">
+                <svg class="w-4 h-4 text-white/50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                
+                <input 
+                  type="text" 
+                  id="userMessageInput"
+                  placeholder="Ask a question or request support..." 
+                  class="bg-transparent border-none outline-none text-xs text-white placeholder-white/40 flex-1 w-full"
+                  autocomplete="off"
+                />
+
+                <button type="submit" id="sendBtn" class="w-7 h-7 rounded-full bg-white hover:bg-white/90 text-black flex items-center justify-center transition active:scale-90 shadow">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                </button>
+              </div>
+
+              <!-- Info Capsule -->
+              <button type="button" onclick="triggerInfoModal()" title="Info" class="h-11 px-3 rounded-full notsky-pill-dark hover:bg-white/20 transition flex items-center justify-center text-xs font-medium text-white/90 gap-1">
+                <span>Docs</span>
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: Google Chat Workspace Bridge View Simulator -->
+      <div class="lg:col-span-6 flex flex-col">
+        <div class="text-center mb-3">
+          <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium text-sky-300 bg-sky-950/60 border border-sky-500/30 backdrop-blur">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Google Workspace Perspective (Your Team's Google Chat Space)
+          </span>
+        </div>
+
+        <!-- Google Chat Mock Window -->
+        <div class="w-full bg-[#202124] border border-gray-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[590px]">
+          
+          <!-- Google Chat Header -->
+          <div class="bg-[#2d2f31] border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+                #
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-white text-sm font-semibold">website-leads-support</h2>
+                  <span class="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Space</span>
+                </div>
+                <p class="text-[11px] text-gray-400">Google Chat App Bot: <span class="text-emerald-400 font-medium">@NotskyBridge</span> active</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400 font-mono">Thread #visitor-8492</span>
+            </div>
+          </div>
+
+          <!-- Google Chat Space Feed -->
+          <div id="gchatFeed" class="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+            
+            <!-- Bot Space Joined System Message -->
+            <div class="flex items-center justify-center my-2">
+              <span class="bg-[#2d2f31] text-gray-400 px-3 py-1 rounded-full text-[11px] border border-gray-700">
+                🤖 <strong>Notsky Bridge Bot</strong> connected to Space
+              </span>
+            </div>
+
+            <!-- Initial Thread Card in Google Chat -->
+            <div class="border border-gray-700 bg-[#282a2d] rounded-xl p-3.5 space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold">W</div>
+                  <span class="font-semibold text-white">Website Visitor #8492</span>
+                  <span class="text-[10px] text-gray-400">Just now • Chrome / macOS</span>
+                </div>
+                <span class="px-2 py-0.5 text-[10px] rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Active Session</span>
+              </div>
+              <p class="text-gray-300 text-xs pl-8">Visitor opened your website chat widget.</p>
+            </div>
+
+          </div>
+
+          <!-- Google Chat Reply Form for Team Member -->
+          <div class="bg-[#2d2f31] border-t border-gray-700 p-3">
+            <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1.5 px-1">
+              <span>Reply as: <strong class="text-white">Romeet (Support Engineer)</strong></span>
+              <span class="text-emerald-400">● Live Two-Way Sync</span>
+            </div>
+            
+            <form onsubmit="handleGChatReply(event)" class="flex gap-2">
+              <input 
+                type="text" 
+                id="gchatInput"
+                placeholder="Reply to visitor in this Google Chat thread..."
+                class="flex-1 bg-[#1e1f20] border border-gray-600 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+              />
+              <button 
+                type="submit" 
+                class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow"
+              >
+                <span>Send to Visitor</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+              </button>
+            </form>
+            
+            <!-- Quick Preset Responses for Demo -->
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <span class="text-[10px] text-gray-500 self-center mr-1">Quick replies:</span>
+              <button onclick="presetGChatReply('Hello! Romeet here from team Notsky. How can I help you today?')" class="text-[10px] bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded border border-gray-600/50 transition">
+                👋 Greeting
+              </button>
+              <button onclick="presetGChatReply('Yes! We have an enterprise plan with unlimited team members and Google Chat bots.')" class="text-[10px] bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded border border-gray-600/50 transition">
+                💼 Enterprise Answer
+              </button>
+              <button onclick="presetGChatReply('I have forwarded your question to our lead dev. Here is our calendar link to connect: calendly.com/demo')" class="text-[10px] bg-gray-700/60 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded border border-gray-600/50 transition">
+                🔗 Calendar Link
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-white/60">
+      <div class="flex items-center gap-4">
+        <span>✨ <strong>Design:</strong> SwiftUI Notsky Spec</span>
+        <span>⚡ <strong>Transport:</strong> WebSocket / SSE Realtime Bridge</span>
+        <span>🏢 <strong>Google Workspace:</strong> Direct Space Threading</span>
+      </div>
+      <div>
+        <span>Notsky App Core Visual Engine • Standalone Prototype</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    let isDarkMode = true;
+    const chatMessagesEl = document.getElementById('chatMessages');
+    const gchatFeedEl = document.getElementById('gchatFeed');
+    const emptyStateEl = document.getElementById('emptyState');
+    const typingIndicatorEl = document.getElementById('typingIndicator');
+    const statusDotEl = document.getElementById('statusDot');
+    const statusDotPulseEl = document.getElementById('statusDotPulse');
+    const statusLabelEl = document.getElementById('statusLabel');
+
+    function setTheme(bgClass) {
+      const body = document.getElementById('bodyRoot');
+      body.className = 'm-0 p-0 overflow-x-hidden min-h-screen transition-all duration-700 ' + bgClass;
+    }
+
+    function toggleDarkMode() {
+      isDarkMode = !isDarkMode;
+      const card = document.getElementById('notskyCard');
+      const brandCapsule = document.getElementById('brandCapsule');
+      const statusCapsule = document.getElementById('statusCapsule');
+      const inputBar = document.getElementById('inputBar');
+      const modeText = document.getElementById('modeText');
+      const brandTitle = document.getElementById('brandTitle');
+      const welcomeTitle = document.getElementById('welcomeTitle');
+      const welcomeSubtitle = document.getElementById('welcomeSubtitle');
+
+      if (isDarkMode) {
+        card.className = "w-full max-w-[420px] h-[590px] rounded-[36px] notsky-glass-dark relative flex flex-col overflow-hidden transition-all duration-300 shadow-2xl";
+        brandCapsule.className = "h-9 px-4 rounded-full notsky-pill-dark flex items-center gap-1.5 shadow-md";
+        statusCapsule.className = "h-9 px-3.5 rounded-full notsky-pill-dark flex items-center gap-2 shadow-md";
+        inputBar.className = "flex-1 h-11 px-3.5 rounded-full notsky-pill-dark flex items-center gap-2.5 shadow-lg";
+        modeText.innerText = "Dark Glass";
+        brandTitle.className = "text-xs font-semibold text-white tracking-tight";
+        if(welcomeTitle) welcomeTitle.className = "text-sm font-semibold text-white";
+        if(welcomeSubtitle) welcomeSubtitle.className = "text-xs text-white/70 leading-relaxed";
+      } else {
+        card.className = "w-full max-w-[420px] h-[590px] rounded-[36px] notsky-glass-light relative flex flex-col overflow-hidden transition-all duration-300 shadow-2xl";
+        brandCapsule.className = "h-9 px-4 rounded-full notsky-pill-light flex items-center gap-1.5 shadow-md";
+        statusCapsule.className = "h-9 px-3.5 rounded-full notsky-pill-light flex items-center gap-2 shadow-md";
+        inputBar.className = "flex-1 h-11 px-3.5 rounded-full notsky-pill-light flex items-center gap-2.5 shadow-lg";
+        modeText.innerText = "Light Glass";
+        brandTitle.className = "text-xs font-semibold text-gray-900 tracking-tight";
+        if(welcomeTitle) welcomeTitle.className = "text-sm font-semibold text-gray-900";
+        if(welcomeSubtitle) welcomeSubtitle.className = "text-xs text-gray-700 leading-relaxed";
+      }
+    }
+
+    function handleUserSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('userMessageInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendVisitorMessage(text);
+    }
+
+    function sendQuickPrompt(text) {
+      sendVisitorMessage(text);
+    }
+
+    function sendVisitorMessage(text) {
+      if (emptyStateEl) emptyStateEl.style.display = 'none';
+
+      const bubbleClass = isDarkMode ? "notsky-user-bubble-dark text-white" : "notsky-user-bubble-light text-gray-900";
+      const userMsgHtml = `
+        <div class="flex justify-end items-end gap-2">
+          <div class="max-w-[80%] rounded-[20px] rounded-br-[4px] px-4 py-2.5 ${bubbleClass} text-xs leading-relaxed shadow-sm">
+            ${escapeHtml(text)}
+          </div>
+        </div>
+      `;
+      chatMessagesEl.insertAdjacentHTML('beforeend', userMsgHtml);
+      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const gchatMsgHtml = `
+        <div class="border-l-2 border-indigo-500 bg-[#282a2d] rounded-r-xl p-3 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span class="font-semibold text-white">Visitor #8492</span>
+              <span class="text-[10px] text-gray-400">${now}</span>
+            </div>
+            <span class="text-[10px] text-indigo-400 font-mono">Incoming from Web Widget</span>
+          </div>
+          <p class="text-gray-200 text-xs pl-4 font-normal">${escapeHtml(text)}</p>
+        </div>
+      `;
+      gchatFeedEl.insertAdjacentHTML('beforeend', gchatMsgHtml);
+      gchatFeedEl.scrollTop = gchatFeedEl.scrollHeight;
+
+      setTeamStatus(true);
+      setTimeout(() => {
+        simulateBotOrTeamReaction(text);
+      }, 1400);
+    }
+
+    function handleGChatReply(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('gchatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendTeamReply(text);
+    }
+
+    function presetGChatReply(text) {
+      document.getElementById('gchatInput').value = text;
+    }
+
+    function sendTeamReply(text) {
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const gchatMsgHtml = `
+        <div class="border-l-2 border-emerald-500 bg-[#25282c] rounded-r-xl p-3 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-emerald-700 flex items-center justify-center text-white text-[10px] font-bold">R</div>
+              <span class="font-semibold text-emerald-400">Romeet (Support Engineer)</span>
+              <span class="text-[10px] text-gray-400">${now}</span>
+            </div>
+            <span class="text-[10px] text-emerald-400 font-mono">Sent to Visitor</span>
+          </div>
+          <p class="text-white text-xs pl-4 font-normal">${escapeHtml(text)}</p>
+        </div>
+      `;
+      gchatFeedEl.insertAdjacentHTML('beforeend', gchatMsgHtml);
+      gchatFeedEl.scrollTop = gchatFeedEl.scrollHeight;
+
+      typingIndicatorEl.classList.remove('hidden');
+      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+
+      setTimeout(() => {
+        typingIndicatorEl.classList.add('hidden');
+        setTeamStatus(false);
+
+        const replyHtml = `
+          <div class="flex items-start gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow mt-0.5">
+              R
+            </div>
+            <div class="space-y-1 max-w-[85%]">
+              <div class="flex items-center gap-1.5 px-1">
+                <span class="text-[10px] font-semibold text-white/90">Romeet</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Google Chat</span>
+              </div>
+              <div class="rounded-[20px] rounded-tl-[4px] px-4 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 text-xs text-white leading-relaxed shadow-sm">
+                ${escapeHtml(text)}
+              </div>
+            </div>
+          </div>
+        `;
+        chatMessagesEl.insertAdjacentHTML('beforeend', replyHtml);
+        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+      }, 700);
+    }
+
+    function simulateBotOrTeamReaction(userText) {
+      if (userText.toLowerCase().includes('pricing') || userText.toLowerCase().includes('plan')) {
+        presetGChatReply("Hi! Our starter plan is $29/mo and includes unlimited Google Chat sync. Would you like a demo?");
+      } else if (userText.toLowerCase().includes('integration')) {
+        presetGChatReply("Our integration connects directly with Google Chat spaces via Service Account without notifying external admins.");
+      }
+    }
+
+    function setTeamStatus(isTyping) {
+      if (isTyping) {
+        statusDotEl.className = "w-2 h-2 rounded-full bg-amber-400";
+        statusDotPulseEl.className = "w-2 h-2 rounded-full bg-amber-400 pulse-dot absolute";
+        statusLabelEl.innerText = "team active";
+      } else {
+        statusDotEl.className = "w-2 h-2 rounded-full bg-emerald-400";
+        statusDotPulseEl.className = "w-2 h-2 rounded-full bg-emerald-400 pulse-dot absolute";
+        statusLabelEl.innerText = "team ready";
+      }
+    }
+
+    function resetConversation() {
+      chatMessagesEl.innerHTML = '';
+      if (emptyStateEl) {
+        chatMessagesEl.appendChild(emptyStateEl);
+        emptyStateEl.style.display = 'block';
+      }
+      setTeamStatus(false);
+      typingIndicatorEl.classList.add('hidden');
+    }
+
+    function triggerInfoModal() {
+      alert("Notsky Chat Demo:\n• Liquid-Glass UI inspired directly by Notsky macOS App.\n• Specular highlight borders & wallpaper sampling.\n• Bi-directional bridge to Google Workspace Chat Spaces.");
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

@@ -10,9 +10,10 @@ public struct CardExportSnapshotView: View {
     
     private var isNotesType: Bool { note.cardType == .notes }
     private var isFinderType: Bool { note.cardType == .finder }
+    private var isFoldersType: Bool { note.cardType == .folders }
     
     private var cardWidth: CGFloat {
-        if isFinderType {
+        if isFinderType || isFoldersType {
             return CGFloat(max(360, min(586, note.width > 281 ? note.width : 360)))
         } else if isNotesType {
             return CGFloat(max(350, min(586, note.width > 281 ? note.width : 360)))
@@ -22,7 +23,7 @@ public struct CardExportSnapshotView: View {
     }
     
     private var cardHeight: CGFloat {
-        if isFinderType {
+        if isFinderType || isFoldersType {
             return CGFloat(max(460, min(752, note.height > 364 ? note.height : 460)))
         } else if isNotesType {
             return CGFloat(max(440, min(752, note.height > 364 ? note.height : 450)))
@@ -133,6 +134,36 @@ public struct CardExportSnapshotView: View {
                                     .fill(Color.red)
                                     .frame(width: 6, height: 6)
                                 Text("ready")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(taskTextColor.opacity(0.85))
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                        }
+                    } else if isFoldersType {
+                        HStack(spacing: 8) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "folder.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.blue)
+                                Text("Folders")
+                                    .font(.system(size: 13, weight: .semibold, design: .default))
+                                    .foregroundStyle(taskTextColor)
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(height: 34)
+                            .background(sheetBackgroundColor, in: Capsule())
+                            .overlay(Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75))
+                            .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
+                            
+                            HStack(spacing: 5) {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 6, height: 6)
+                                Text("3 folders")
                                     .font(.system(size: 12, weight: .medium, design: .rounded))
                                     .foregroundStyle(taskTextColor.opacity(0.85))
                             }
@@ -372,6 +403,54 @@ public struct CardExportSnapshotView: View {
                             }
                             .padding(.horizontal, 18)
                             .padding(.vertical, 4)
+                            .frame(maxHeight: .infinity)
+                        } else if isFoldersType {
+                            VStack(spacing: 10) {
+                                HStack(spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Image(systemName: "folder.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.blue)
+                                            Spacer()
+                                            Text("3 notes")
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(taskTextColor.opacity(0.5))
+                                        }
+                                        Spacer()
+                                        Text("Projects")
+                                            .font(.system(size: 13.5, weight: .semibold))
+                                            .foregroundColor(taskTextColor)
+                                    }
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, minHeight: 95)
+                                    .background(sheetBackgroundColor.opacity(0.7), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(specularBorderGradient, lineWidth: 0.5))
+
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack {
+                                            Image(systemName: "person.crop.circle.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.blue)
+                                            Spacer()
+                                            Text("2 notes")
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(taskTextColor.opacity(0.5))
+                                        }
+                                        Spacer()
+                                        Text("Personal")
+                                            .font(.system(size: 13.5, weight: .semibold))
+                                            .foregroundColor(taskTextColor)
+                                    }
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, minHeight: 95)
+                                    .background(sheetBackgroundColor.opacity(0.7), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(specularBorderGradient, lineWidth: 0.5))
+                                }
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
                             .frame(maxHeight: .infinity)
                         } else if isNotesType {
                             let currentContent: String = note.pages.indices.contains(note.activePageIndex)

@@ -16,10 +16,33 @@ public struct NoteItem: Identifiable, Codable, Equatable {
     }
 }
 
+public struct NoteFolder: Identifiable, Codable, Equatable {
+    public var id: UUID
+    public var name: String
+    public var icon: String
+    public var colorHex: String?
+    public var createdAt: Date
+    
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        icon: String = "folder.fill",
+        colorHex: String? = nil,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.colorHex = colorHex
+        self.createdAt = createdAt
+    }
+}
+
 public enum CardType: String, Codable, Equatable {
     case tasks
     case notes
     case finder
+    case folders
 }
 
 public struct FinderFileItem: Identifiable, Codable, Equatable {
@@ -98,6 +121,7 @@ public struct NoteCard: Identifiable, Codable, Equatable {
     public var headerImagePath: String
     public var items: [NoteItem]
     public var chatMessages: [ChatMessage]
+    public var folderId: UUID?
     public var gridCol: Int
     public var gridRow: Int
     public var positionX: Double
@@ -119,6 +143,7 @@ public struct NoteCard: Identifiable, Codable, Equatable {
         headerImagePath: String = WallpaperPackManager.defaultFallbackPath,
         items: [NoteItem] = [],
         chatMessages: [ChatMessage] = [],
+        folderId: UUID? = nil,
         gridCol: Int = 0,
         gridRow: Int = 0,
         positionX: Double = 0,
@@ -143,6 +168,7 @@ public struct NoteCard: Identifiable, Codable, Equatable {
         self.headerImagePath = headerImagePath
         self.items = items
         self.chatMessages = chatMessages
+        self.folderId = folderId
         self.gridCol = gridCol
         self.gridRow = gridRow
         self.positionX = positionX
