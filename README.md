@@ -65,7 +65,7 @@ Create task lists with spring-animated strike-throughs, multi-tab notes with bol
 A spotlight-style search interface that scans local files across your Mac. Query PDFs, spreadsheets, presentations, code, and images using natural phrases like *"find design assets from yesterday"* with instant file previews and AI summaries.
 
 ### Slide-Up Notes Shelf
-Press `⌘⇧D` from anywhere to slide up a full-width frosted glass shelf directly over the macOS Dock. Review all active project cards in a single horizontal carousel without moving open app windows.
+Press `⌥⌘D` from anywhere to slide up a full-width frosted glass shelf directly over the macOS Dock. Review all active project cards in a single horizontal carousel without moving open app windows.
 
 ### Tactile Feedback Engine
 Mechanical synthetic audio clicks and macOS Taptic Engine haptics provide physical confirmation whenever you complete a task, switch tabs, or cycle wallpaper packs.

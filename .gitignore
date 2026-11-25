@@ -15,3 +15,4 @@ DerivedData/
 *.app
 *.o
 
+dist/

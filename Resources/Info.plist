@@ -7,9 +7,17 @@
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.romeet.notsky</string>
+    <string>com.romeet.notsky.next</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+    </array>
+    <key>CFBundleDisplayName</key>
+    <string>Notsky Next</string>
     <key>CFBundleName</key>
-    <string>Notsky</string>
+    <string>Notsky Next</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -20,6 +28,8 @@
     <string>14.0</string>
     <key>LSUIElement</key>
     <false/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Notsky Next shows and controls the song playing in Music or Spotify.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
