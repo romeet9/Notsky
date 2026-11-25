@@ -17,6 +17,7 @@ public struct SettingsDetailView: View {
             case .folders: FoldersSettingsForm()
             case .appearance: AppearanceSettingsForm()
             case .linear: LinearSettingsForm()
+            case .voice: VoiceSettingsForm()
             case .focusTimer: FocusTimerSettingsForm()
             case .exportSharing: ExportSettingsForm()
             case .shortcuts: ShortcutsSettingsForm()

@@ -14,13 +14,7 @@ public struct LinearCardView: View {
     private var service = LinearService.shared
     private var settings: AppSettings { AppSettings.shared }
 
-    @State private var isAdding = false
-    @State private var newTitle = ""
-    @State private var selectedTeamId: String? = nil
-    @State private var isCreating = false
     @State private var isHoveringRefresh = false
-    @State private var isHoveringAdd = false
-    @FocusState private var isInputFocused: Bool
 
     private var cardWidth: CGFloat { CGFloat(note.width) }
     private var cardHeight: CGFloat { CGFloat(note.height) }
@@ -49,13 +43,7 @@ public struct LinearCardView: View {
     private var accent: Color { ImageLuminanceDetector.dominantAccentColor(at: note.headerImagePath) }
     private static let linearIndigo = "#5E6AD2"
 
-    @AppStorage("linear.expanded.todo") private var todoExpanded = true
-    @AppStorage("linear.expanded.progress") private var progressExpanded = true
-    @AppStorage("linear.expanded.done") private var doneExpanded = false
-    @AppStorage("linear.showAll.todo") private var todoShowAll = false
-    @AppStorage("linear.showAll.progress") private var progressShowAll = false
-    @AppStorage("linear.showAll.done") private var doneShowAll = false
-    @AppStorage("linear.focusOnly") private var focusOnly = false
+    @AppStorage("linear.tab") private var storedTab = ""
 
     fileprivate enum Section: Int, CaseIterable {
         case todo, progress, done
@@ -66,14 +54,11 @@ public struct LinearCardView: View {
             case .done: return String(localized: "Done")
             }
         }
-        /// Rows shown before "Show N more".
-        var cap: Int { self == .done ? 2 : 3 }
-        func emptyText(focus: Bool) -> String {
-            if focus && self != .done { return String(localized: "Nothing urgent or due soon") }
+        var emptyText: String {
             switch self {
             case .todo: return String(localized: "Nothing to do")
             case .progress: return String(localized: "Nothing in progress")
-            case .done: return String(localized: "Nothing completed in the last 7 days")
+            case .done: return String(localized: "Nothing done this week")
             }
         }
         var types: Set<String> {
@@ -99,52 +84,19 @@ public struct LinearCardView: View {
         }
     }
 
-    private func isExpanded(_ s: Section) -> Bool {
-        switch s {
-        case .todo: return todoExpanded
-        case .progress: return progressExpanded
-        case .done: return doneExpanded
-        }
+    private var selectedTab: Section {
+        if let raw = Int(storedTab), let s = Section(rawValue: raw) { return s }
+        return sections.first(where: { $0.section == .progress })?.issues.isEmpty == false ? .progress : .todo
     }
 
-    private func isShowAll(_ s: Section) -> Bool {
-        switch s {
-        case .todo: return todoShowAll
-        case .progress: return progressShowAll
-        case .done: return doneShowAll
-        }
-    }
-
-    private func toggleShowAll(_ s: Section) {
-        switch s {
-        case .todo: todoShowAll.toggle()
-        case .progress: progressShowAll.toggle()
-        case .done: doneShowAll.toggle()
-        }
-    }
-
-    private func toggle(_ s: Section) {
-        switch s {
-        case .todo: todoExpanded.toggle()
-        case .progress: progressExpanded.toggle()
-        case .done: doneExpanded.toggle()
-        }
+    private func selectTab(_ tab: Section) {
+        storedTab = String(tab.rawValue)
     }
 
     /// Issues de-duplicated by id (open + recently done can overlap briefly around a refresh).
     private var uniqueIssues: [LinearIssue] {
         var seen = Set<String>()
         return service.issues.filter { seen.insert($0.id).inserted }
-    }
-
-    /// All open issues, ignoring the Focus filter.
-    private var rawOpenCount: Int {
-        uniqueIssues.filter { $0.state.type != "completed" && $0.state.type != "canceled" }.count
-    }
-
-    /// Open issues currently visible (respects Focus).
-    private var openCount: Int {
-        sections.filter { $0.section != .done }.reduce(0) { $0 + $1.issues.count }
     }
 
     fileprivate enum DueChoice: Hashable {
@@ -216,7 +168,7 @@ public struct LinearCardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.horizontal, 12)
-                .padding(.top, 6)
+                .padding(.top, 22) // matches the task card's list inset
                 .padding(.bottom, 10)
 
                 if let toast = service.toast {
@@ -271,20 +223,10 @@ public struct LinearCardView: View {
                         .scaledFont(size: 15, weight: .medium)
                         .foregroundStyle(primaryText)
                         .lineLimit(1)
-                    if service.status == .ready || !service.issues.isEmpty {
-                        Text(verbatim: "·")
-                            .scaledFont(size: 15, weight: .medium)
-                            .foregroundStyle(tertiaryText)
-                        Text("\(openCount)")
-                            .scaledFont(size: 15, weight: .medium, design: .rounded)
-                            .monospacedDigit()
-                            .foregroundStyle(secondaryText)
-                            .contentTransition(.numericText())
-                    }
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(String(localized: "Linear, \(openCount) open issues"))
+            .accessibilityLabel("Linear")
 
             if service.hasKey { filterPill }
 
@@ -312,32 +254,18 @@ public struct LinearCardView: View {
                 .accessibilityLabel("Refresh")
                 .help("Refresh (⌘R)")
 
-                Button {
-                    SensoryFeedback.buttonClicked()
-                    if isAdding { cancelAdd() } else { beginAdd() }
-                } label: {
-                    headerIconPill(hovering: isHoveringAdd) {
-                        Image(systemName: isAdding ? "xmark" : "plus")
-                            .scaledFont(size: 14, weight: .semibold)
-                            .foregroundStyle(primaryText.opacity(0.9))
-                    }
-                }
-                .buttonStyle(.plain)
-                .onHover { isHoveringAdd = $0 }
-                .disabled(service.status == .unauthorized)
-                .accessibilityLabel(isAdding ? "Cancel new issue" : "New issue")
-                .help(isAdding ? "Cancel" : "New issue")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .motionAnimation(.easeInOut(duration: 0.2), value: openCount)
     }
 
     private var filterPill: some View {
-        WidgetHeaderCapsule(isDark: isDark, baseOpacity: settings.backgroundOpacity) {
+        let counts = Dictionary(uniqueKeysWithValues: sections.map { ($0.section, $0.issues.count) })
+        return WidgetHeaderCapsule(isDark: isDark, baseOpacity: settings.backgroundOpacity) {
             HStack(spacing: 2) {
-                filterSegment(String(localized: "All"), selected: !focusOnly) { focusOnly = false }
-                filterSegment(String(localized: "Focus"), selected: focusOnly) { focusOnly = true }
+                ForEach(Section.allCases, id: \.rawValue) { tab in
+                    filterSegment("\(tab.title) \(counts[tab] ?? 0)", selected: selectedTab == tab) { selectTab(tab) }
+                }
             }
             .padding(.horizontal, -8)
         }
@@ -348,11 +276,14 @@ public struct LinearCardView: View {
         Button {
             guard !selected else { return }
             SensoryFeedback.buttonClicked()
-            withMotion(.spring(response: 0.32, dampingFraction: 0.88)) { action() }
+            withMotion(.easeInOut(duration: 0.2)) { action() }
         } label: {
             Text(title)
                 .scaledFont(size: 13, weight: .semibold)
+                .monospacedDigit()
                 .foregroundStyle(selected ? primaryText : secondaryText)
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, 10)
                 .frame(height: 26)
                 .background(primaryText.opacity(selected ? (isDark ? 0.14 : 0.09) : 0), in: Capsule())
@@ -385,7 +316,6 @@ public struct LinearCardView: View {
                 items = items.filter { (Self.parseTimestamp($0.completedAt) ?? .distantPast) >= cutoff }
                 sorted = items.sorted { ($0.completedAt ?? "") > ($1.completedAt ?? "") }
             } else {
-                if focusOnly { items = items.filter { Self.isFocus($0, now: now) } }
                 sorted = Self.sortIssues(items)
             }
             return (section, sorted.first?.state.color ?? section.defaultColor, sorted)
@@ -399,15 +329,6 @@ public struct LinearCardView: View {
         if let d = f.date(from: s) { return d }
         f.formatOptions = [.withInternetDateTime]
         return f.date(from: s)
-    }
-
-    /// Focus: Urgent/High, or overdue / due within 3 days.
-    private static func isFocus(_ issue: LinearIssue, now: Date) -> Bool {
-        if issue.priority == 1 || issue.priority == 2 { return true }
-        guard let due = LinearService.parseDate(issue.dueDate) else { return false }
-        let calendar = Calendar.current
-        guard let limit = calendar.date(byAdding: .day, value: 3, to: calendar.startOfDay(for: now)) else { return false }
-        return due <= limit
     }
 
     private static func rank(_ p: Int) -> Int { p == 0 ? 5 : p }
@@ -438,10 +359,6 @@ public struct LinearCardView: View {
         return uniqueIssues.map(\.team).filter { seen.insert($0.id).inserted }
     }
 
-    private var showsTeamChips: Bool {
-        Set(uniqueIssues.map(\.team.id)).count > 1
-    }
-
     /// Fill amount of the in-progress pie: Linear fills it by the state's order among the team's started states.
     private static func progress(of issue: LinearIssue) -> Double {
         let started = issue.teamStates.filter { $0.type == "started" }
@@ -457,74 +374,31 @@ public struct LinearCardView: View {
 
     // MARK: - List
 
-    private enum ListItem: Identifiable {
-        case header(Section, color: String, count: Int)
-        case quickAdd
-        case row(LinearIssue)
-        case empty(Section)
-        case more(Section, hidden: Int, expanded: Bool)
-        case allClear
-
-        var id: String {
-            switch self {
-            case .header(let s, _, _): return "h-\(s.rawValue)"
-            case .quickAdd: return "add"
-            case .row(let issue): return issue.id
-            case .empty(let s): return "e-\(s.rawValue)"
-            case .more(let s, _, _): return "m-\(s.rawValue)"
-            case .allClear: return "all-clear"
-            }
-        }
-    }
-
-    private var listItems: [ListItem] {
-        var items: [ListItem] = []
-        let groups = sections
-        let allClear = service.status == .ready && rawOpenCount == 0 && !isAdding
-        if allClear { items.append(.allClear) }
-        for group in groups {
-            if allClear && group.section != .done { continue }
-            items.append(.header(group.section, color: group.color, count: group.issues.count))
-            if group.section == .todo && isAdding { items.append(.quickAdd) }
-            guard isExpanded(group.section) else { continue }
-            if group.issues.isEmpty {
-                let hasData = service.status == .ready || !uniqueIssues.isEmpty
-                if hasData && !(group.section == .todo && isAdding) { items.append(.empty(group.section)) }
-            } else {
-                let showAll = isShowAll(group.section)
-                let visible = showAll ? group.issues : Array(group.issues.prefix(group.section.cap))
-                items.append(contentsOf: visible.map { .row($0) })
-                if group.issues.count > group.section.cap {
-                    items.append(.more(group.section, hidden: group.issues.count - group.section.cap, expanded: showAll))
-                }
-            }
-        }
-        return items
-    }
-
-    private var listAnimationKey: [String] {
-        listItems.map { item in
-            if case .row(let issue) = item { return issue.id + issue.state.id }
-            return item.id
-        }
+    private var visibleIssues: [LinearIssue] {
+        sections.first(where: { $0.section == selectedTab })?.issues ?? []
     }
 
     private var issueList: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        let tab = selectedTab
+        let issues = visibleIssues
+        let hasData = service.status == .ready || !uniqueIssues.isEmpty
+        return ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 2) {
-                ForEach(listItems) { item in
-                    switch item {
-                    case .header(let section, let color, let count):
-                        sectionHeader(section, color: color, count: count)
-                    case .quickAdd:
-                        quickAdd
-                            .padding(.vertical, 2)
-                            .motionTransition(.opacity.combined(with: .move(edge: .top)))
-                    case .row(let issue):
+                if issues.isEmpty {
+                    if hasData {
+                        Text(tab.emptyText)
+                            .scaledFont(size: 13, weight: .regular)
+                            .foregroundStyle(tertiaryText)
+                            .padding(.leading, 10)
+                            .padding(.vertical, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .motionTransition(.opacity)
+                    }
+                } else {
+                    ForEach(issues) { issue in
                         LinearIssueRow(
                             issue: issue,
                             isDark: isDark,
-                            showTeamChip: showsTeamChips,
                             progress: Self.progress(of: issue),
                             onOpen: { service.open(issue) },
                             onSetState: { state in changeState(state, for: issue) },
@@ -536,27 +410,18 @@ public struct LinearCardView: View {
                             insertion: .opacity.combined(with: .move(edge: .top)),
                             removal: .opacity.combined(with: .move(edge: .bottom))
                         ))
-                    case .empty(let section):
-                        Text(section.emptyText(focus: focusOnly))
-                            .scaledFont(size: 13, weight: .regular)
-                            .foregroundStyle(tertiaryText)
-                            .padding(.leading, 34)
-                            .padding(.vertical, 6)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .motionTransition(.opacity)
-                    case .more(let section, let hidden, let expanded):
-                        moreButton(section, hidden: hidden, expanded: expanded)
-                            .motionTransition(.opacity)
-                    case .allClear:
-                        allClearView
-                            .motionTransition(.opacity)
                     }
                 }
             }
+            .id(tab.rawValue)
+            .transition(.opacity)
             .padding(.top, 0)
             .padding(.bottom, 8)
-            .motionAnimation(.spring(response: 0.38, dampingFraction: 0.86), value: listAnimationKey)
+            .motionAnimation(.spring(response: 0.38, dampingFraction: 0.86), value: issues.map { $0.id + $0.state.id })
         }
+        .id(tab.rawValue)
+        .transition(.opacity)
+        .motionAnimation(.easeInOut(duration: 0.2), value: tab)
         .contentEdgeFade(top: 8, bottom: 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -580,78 +445,12 @@ public struct LinearCardView: View {
         }
     }
 
-    private func moreButton(_ section: Section, hidden: Int, expanded: Bool) -> some View {
-        Button {
-            SensoryFeedback.buttonClicked()
-            withMotion(.spring(response: 0.32, dampingFraction: 0.88)) { toggleShowAll(section) }
-        } label: {
-            Text(expanded ? String(localized: "Show less") : String(localized: "Show \(hidden) more"))
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(secondaryText)
-                .padding(.leading, 34)
-                .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
     private func changePriority(_ value: Int, for issue: LinearIssue) {
         guard value != issue.priority else { return }
         SensoryFeedback.buttonClicked()
         withMotion(.spring(response: 0.38, dampingFraction: 0.86)) {
             service.setPriority(value, for: issue)
         }
-    }
-
-    private func sectionHeader(_ section: Section, color: String, count: Int) -> some View {
-        let expanded = isExpanded(section)
-        return Button {
-            SensoryFeedback.buttonClicked()
-            withMotion(.spring(response: 0.32, dampingFraction: 0.88)) { toggle(section) }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "chevron.right")
-                    .scaledFont(size: 10, weight: .bold)
-                    .foregroundStyle(tertiaryText)
-                    .rotationEffect(.degrees(expanded ? 90 : 0))
-                    .frame(width: 14)
-                LinearStatusGlyph(type: section.glyphType, color: Color(linearHex: color), size: 14)
-                Text(section.title)
-                    .scaledFont(size: 13, weight: .semibold)
-                    .foregroundStyle(primaryText.opacity(0.85))
-                Text("\(count)")
-                    .scaledFont(size: 13, weight: .medium, design: .rounded)
-                    .monospacedDigit()
-                    .foregroundStyle(tertiaryText)
-                    .contentTransition(.numericText())
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .padding(.top, 6)
-            .padding(.bottom, 2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(section.title), \(count)")
-        .accessibilityValue(expanded ? String(localized: "Expanded") : String(localized: "Collapsed"))
-        .accessibilityAddTraits(.isButton)
-    }
-
-    private var allClearView: some View {
-        VStack(spacing: 8) {
-            LinearStatusGlyph(type: "completed", color: Color(linearHex: Self.linearIndigo), size: 34)
-                .padding(.bottom, 4)
-            Text("All clear")
-                .scaledFont(size: 17, weight: .semibold)
-                .foregroundStyle(primaryText)
-            Text("Nothing assigned to you is open.")
-                .scaledFont(size: 14, weight: .regular)
-                .foregroundStyle(secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Footer
@@ -735,107 +534,6 @@ public struct LinearCardView: View {
         .frame(minHeight: 36)
         .background(primaryText.opacity(isDark ? 0.07 : 0.045), in: Capsule())
         .motionTransition(.opacity)
-    }
-
-    // MARK: - Quick add
-
-    private func beginAdd() {
-        if selectedTeamId == nil || !availableTeams.contains(where: { $0.id == selectedTeamId }) {
-            selectedTeamId = defaultTeamId
-        }
-        withMotion(.spring(response: 0.32, dampingFraction: 0.88)) { isAdding = true }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.05))
-            isInputFocused = true
-        }
-    }
-
-    private func cancelAdd() {
-        withMotion(.spring(response: 0.32, dampingFraction: 0.88)) {
-            isAdding = false
-            newTitle = ""
-        }
-        isInputFocused = false
-    }
-
-    private var selectedTeam: LinearTeam? {
-        availableTeams.first(where: { $0.id == (selectedTeamId ?? defaultTeamId) })
-    }
-
-    private var quickAdd: some View {
-        HStack(alignment: .center, spacing: 10) {
-            LinearStatusGlyph(type: "unstarted", color: Color(linearHex: Section.todo.defaultColor), size: 14)
-                .frame(width: 16)
-
-            TextField("Issue title", text: $newTitle)
-                .scaledFont(size: 15, weight: .regular)
-                .textFieldStyle(.plain)
-                .foregroundStyle(primaryText)
-                .focused($isInputFocused)
-                .onSubmit { submitNewIssue() }
-                .onExitCommand { cancelAdd() }
-                .disabled(isCreating)
-                .accessibilityLabel("New issue title")
-
-            if isCreating {
-                ProgressView().controlSize(.mini)
-            }
-
-            Menu {
-                Picker("Team", selection: Binding(
-                    get: { selectedTeamId ?? defaultTeamId ?? "" },
-                    set: { selectedTeamId = $0 }
-                )) {
-                    ForEach(availableTeams) { team in
-                        Label {
-                            Text(team.name)
-                        } icon: {
-                            Image(nsImage: LinearGlyphImage.dot(hex: team.color ?? "#bec2c8"))
-                        }
-                        .tag(team.id)
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } label: {
-                Text(selectedTeam?.key ?? String(localized: "Team"))
-                    .scaledFont(size: 12, weight: .semibold, design: .monospaced)
-                    .foregroundStyle(primaryText.opacity(0.85))
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
-            .padding(.horizontal, 10)
-            .frame(height: 26)
-            .background(buttonBackgroundColor(hovering: false), in: Capsule())
-            .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
-            .help("Team")
-            .accessibilityLabel(String(localized: "Team: \(selectedTeam?.name ?? "")"))
-        }
-        .padding(.leading, 10)
-        .padding(.trailing, 6)
-        .frame(minHeight: 40)
-        .background(primaryText.opacity(isDark ? 0.08 : 0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(accent.opacity(isInputFocused ? 0.55 : 0.0), lineWidth: 1)
-        }
-    }
-
-    private func submitNewIssue() {
-        guard !isCreating, let teamId = selectedTeamId ?? defaultTeamId else { return }
-        let title = newTitle
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        isCreating = true
-        Task {
-            let ok = await service.createIssue(title: title, teamId: teamId)
-            isCreating = false
-            if ok {
-                SensoryFeedback.taskAdded()
-                newTitle = ""
-                isInputFocused = true  // stay in the field for the next one; Esc closes
-            }
-        }
     }
 
     // MARK: - Loading skeleton
@@ -926,7 +624,6 @@ public struct LinearCardView: View {
 private struct LinearIssueRow: View {
     let issue: LinearIssue
     let isDark: Bool
-    let showTeamChip: Bool
     let progress: Double
     let onOpen: () -> Void
     let onSetState: (LinearWorkflowState) -> Void
@@ -954,24 +651,21 @@ private struct LinearIssueRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            priorityMenu
-            Text(issue.identifier)
-                .scaledFont(size: 12.5, weight: .regular, design: .monospaced)
-                .foregroundStyle(secondaryText)
-                .lineLimit(1)
-                .fixedSize()
-                .frame(minWidth: 56, minHeight: 20, alignment: .leading)
-                .overlay(alignment: .leading) {
-                    if showTeamChip, let hex = issue.team.color {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(Color(linearHex: hex))
-                            .frame(width: 6, height: 6)
-                            .offset(x: -9)
-                            .accessibilityHidden(true)
-                    }
-                }
-                .padding(.leading, showTeamChip ? 8 : 0)
-            statusMenu
+            Menu {
+                statusPicker
+            } label: {
+                Image(nsImage: LinearGlyphImage.status(type: issue.state.type, hex: issue.state.color, progress: progress))
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .frame(width: 20, height: 20)
+            .help(issue.state.name)
+            .accessibilityLabel(String(localized: "Status: \(issue.state.name)"))
+            Image(nsImage: LinearGlyphImage.priority(issue.priority, isDark: isDark))
+                .frame(width: 20, height: 20)
+                .help(priorityName)
+                .accessibilityLabel(String(localized: "Priority: \(priorityName)"))
             Text(issue.title)
                 .scaledFont(size: 15, weight: isDone ? .regular : .medium)
                 .foregroundStyle(isDone ? secondaryText : primaryText)
@@ -1025,22 +719,6 @@ private struct LinearIssueRow: View {
         }
     }
 
-    // Status: one click on the glyph lists the team's workflow states with their glyphs.
-    private var statusMenu: some View {
-        Menu {
-            statusPicker
-        } label: {
-            Image(nsImage: LinearGlyphImage.status(type: issue.state.type, hex: issue.state.color, progress: progress))
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .frame(width: 20, height: 20)
-        .help(issue.state.name)
-        .accessibilityLabel(String(localized: "Status: \(issue.state.name)"))
-        .accessibilityHint("Change status")
-    }
-
     @ViewBuilder
     private var statusPicker: some View {
         let states = issue.teamStates.isEmpty ? [issue.state] : issue.teamStates
@@ -1071,22 +749,6 @@ private struct LinearIssueRow: View {
         let started = states.filter { $0.type == "started" }
         guard let i = started.firstIndex(where: { $0.id == state.id }), started.count > 1 else { return 0.5 }
         return Double(i + 1) / Double(started.count + 1)
-    }
-
-    // Priority: one click on the glyph.
-    private var priorityMenu: some View {
-        Menu {
-            priorityPicker
-        } label: {
-            Image(nsImage: LinearGlyphImage.priority(issue.priority, isDark: isDark))
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .frame(width: 20, height: 20)
-        .help(priorityName)
-        .accessibilityLabel(String(localized: "Priority: \(priorityName)"))
-        .accessibilityHint("Change priority")
     }
 
     @ViewBuilder

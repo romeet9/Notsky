@@ -13,6 +13,7 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
     
     // Features
     case linear = "Linear"
+    case voice = "Voice"
     case focusTimer = "Focus Timer"
     case exportSharing = "4K Export & Share"
     case shortcuts = "Shortcuts"
@@ -29,6 +30,7 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
         case .folders: return String(localized: "Folders & Organization")
         case .appearance: return String(localized: "Appearance & Packs")
         case .linear: return String(localized: "Linear")
+        case .voice: return String(localized: "Voice")
         case .focusTimer: return String(localized: "Focus Timer")
         case .exportSharing: return String(localized: "4K Export & Share")
         case .shortcuts: return String(localized: "Shortcuts")
@@ -44,6 +46,7 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
         case .folders: return "folder.fill"
         case .appearance: return "paintpalette"
         case .linear: return "checklist"
+        case .voice: return "waveform"
         case .focusTimer: return "timer"
         case .exportSharing: return "square.and.arrow.up"
         case .shortcuts: return "command"

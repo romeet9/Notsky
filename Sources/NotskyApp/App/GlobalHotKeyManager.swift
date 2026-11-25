@@ -40,7 +40,12 @@ public final class GlobalHotKeyManager {
                 &hotKeyID
             )
             
-            if status == noErr {
+            // Leave other hot keys (e.g. Voice Open's push-to-talk) to their own handlers.
+            guard status == noErr,
+                  hotKeyID.signature == OSType(0x4E545331) || hotKeyID.signature == OSType(0x4E545332) else {
+                return OSStatus(eventNotHandledErr)
+            }
+            do {
                 Task { @MainActor in
                     if hotKeyID.id == 1 { // Option + Cmd + D
                         DrawerWindowManager.shared.toggleDrawer()

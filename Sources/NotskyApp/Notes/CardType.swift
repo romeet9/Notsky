@@ -7,4 +7,5 @@ public enum CardType: String, Codable, Equatable {
     case folders
     case nowPlaying
     case linear
+    case voiceOpen
 }

@@ -23,6 +23,7 @@ public struct SettingsSidebarView: View {
             
             Section("Features") {
                 sidebarRow(for: .linear)
+                sidebarRow(for: .voice)
                 sidebarRow(for: .focusTimer)
                 sidebarRow(for: .exportSharing)
                 sidebarRow(for: .shortcuts)

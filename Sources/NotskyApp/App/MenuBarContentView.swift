@@ -30,6 +30,11 @@ struct MenuBarContentView: View {
         }
         .keyboardShortcut("l", modifiers: [.command, .option])
 
+        Button("New Voice Card") {
+            manager.spawnNewVoiceOpenWidget()
+        }
+        .keyboardShortcut("v", modifiers: [.command, .option])
+
         Divider()
 
         Button("Clear Workspace") {

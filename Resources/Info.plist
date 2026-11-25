@@ -30,6 +30,10 @@
     <false/>
     <key>NSAppleEventsUsageDescription</key>
     <string>Notsky Next shows and controls the song playing in Music or Spotify.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Notsky Next listens while you hold the Voice shortcut so you can add tasks and notes or control music by voice. Audio is never recorded or stored.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Notsky Next turns what you say into a command for tasks, notes or music.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>

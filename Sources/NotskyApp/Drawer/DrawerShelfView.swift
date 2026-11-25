@@ -175,6 +175,17 @@ public struct DrawerShelfView: View {
                                     manager.closeWidget(noteId: note.id)
                                 }
                             )
+                        } else if note.cardType == .voiceOpen {
+                            VoiceOpenCardView(
+                                note: $note,
+                                onSpawnWidget: {
+                                    let origin = manager.windowOrigin(for: note.id)
+                                    manager.spawnNewVoiceOpenWidget(near: origin)
+                                },
+                                onDelete: {
+                                    manager.closeWidget(noteId: note.id)
+                                }
+                            )
                         } else if note.cardType == .notes {
                             FreeformNoteCardView(
                                 note: $note,

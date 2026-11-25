@@ -166,6 +166,7 @@ public final class WidgetWindowManager: NSObject {
         panel.orderFront(nil)
         syncNowPlayingService()
         syncLinearService()
+        syncVoiceOpenService()
     }
     
     public func setPinned(_ isPinned: Bool, for noteId: UUID) {
@@ -323,12 +324,13 @@ public final class WidgetWindowManager: NSObject {
     }
     
     /// Picks the first free slot on the screen under the mouse, creates the card there and opens its window.
+    @discardableResult
     private func placeAndOpen(
         width: Double,
         height: Double,
         preferredCandidate: ((NSScreen?) -> (col: Int, row: Int)?)? = nil,
         make: (_ id: UUID, _ slot: (col: Int, row: Int), _ origin: CGPoint, _ screenID: String?) -> NoteCard
-    ) {
+    ) -> UUID {
         let grid = GridSnapManager.shared
         let screen = grid.screenUnderMouse()
         let screenID = screen?.displayUUID
@@ -345,14 +347,16 @@ public final class WidgetWindowManager: NSObject {
         let note = make(id, slot, origin, screenID)
         store.notes.append(note)
         openWidgetWindow(for: id, at: origin)
+        return id
     }
     
-    public func spawnNewWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewWidget(near origin: CGPoint? = nil, title: String = "New Group", items: [NoteItem] = []) -> UUID {
         let targetWidth: Double = 281
         let targetHeight: Double = 364
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(
+        return placeAndOpen(
             width: targetWidth,
             height: targetHeight,
             preferredCandidate: { screen in
@@ -364,9 +368,9 @@ public final class WidgetWindowManager: NSObject {
                 NoteCard(
                     id: id,
                     cardType: .tasks,
-                    title: "New Group",
+                    title: title,
                     headerImagePath: nextWallpaper,
-                    items: [],
+                    items: items,
                     gridCol: slot.col,
                     gridRow: slot.row,
                     positionX: origin.x,
@@ -379,18 +383,20 @@ public final class WidgetWindowManager: NSObject {
         )
     }
     
-    public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil) {
+    /// Pass `pages` to start with a specific title and content instead of the sample note.
+    @discardableResult
+    public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil, title: String? = nil, pages: [NotePage]? = nil) -> UUID {
         let cardWidth: Double = 586.0
         let targetHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: targetHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: targetHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .notes,
-                title: "Strategy",
-                noteContent: NoteStore.defaultDemoNoteContent,
-                pages: NoteStore.defaultDemoPages,
+                title: title ?? "Strategy",
+                noteContent: pages?.first?.content ?? NoteStore.defaultDemoNoteContent,
+                pages: pages ?? NoteStore.defaultDemoPages,
                 activePageIndex: 0,
                 headerImagePath: nextWallpaper,
                 items: [],
@@ -504,14 +510,46 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
+    public func spawnNewVoiceOpenWidget(near origin: CGPoint? = nil) {
+        let cardWidth: Double = 281.0
+        let cardHeight: Double = 364.0
+        let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
+        
+        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+            NoteCard(
+                id: id,
+                cardType: .voiceOpen,
+                title: "Voice",
+                noteContent: "",
+                headerImagePath: nextWallpaper,
+                items: [],
+                chatMessages: [],
+                gridCol: slot.col,
+                gridRow: slot.row,
+                positionX: origin.x,
+                positionY: origin.y,
+                width: cardWidth,
+                height: cardHeight,
+                screenID: screenID
+            )
+        }
+    }
+    
+    /// Voice Open's hot key and key monitor exist only while at least one Voice Open card exists.
+    private func syncVoiceOpenService() {
+        VoiceOpenService.shared.setActive(store.notes.contains { $0.cardType == .voiceOpen })
+    }
+    
     /// The shared Linear service runs only while at least one Linear card exists.
     private func syncLinearService() {
         LinearService.shared.setActive(store.notes.contains { $0.cardType == .linear })
     }
     
-    /// The shared music service runs only while at least one Now Playing card exists.
+    public func refreshNowPlayingService() { syncNowPlayingService() }
+
+    /// The shared music service runs only while at least one Now Playing card exists (or a voice music command asked for it).
     private func syncNowPlayingService() {
-        NowPlayingService.shared.setActive(store.notes.contains { $0.cardType == .nowPlaying })
+        NowPlayingService.shared.setActive(store.notes.contains { $0.cardType == .nowPlaying } || VoiceOpenService.shared.musicRequested)
     }
     
     public func focusWidget(for noteId: UUID) {
@@ -542,6 +580,7 @@ public final class WidgetWindowManager: NSObject {
         store.deleteNote(id: noteId)
         syncNowPlayingService()
         syncLinearService()
+        syncVoiceOpenService()
     }
     
     public func windowOrigin(for noteId: UUID) -> CGPoint? {
@@ -564,6 +603,7 @@ public final class WidgetWindowManager: NSObject {
         store.notes.removeAll()
         syncNowPlayingService()
         syncLinearService()
+        syncVoiceOpenService()
     }
     
     /// Asks for confirmation, backs up the store file, then clears every card.

@@ -81,6 +81,18 @@ public struct WidgetRootView: View {
                         }
                     )
                     .padding(30)
+                case .voiceOpen:
+                    VoiceOpenCardView(
+                        note: binding,
+                        onSpawnWidget: {
+                            let origin = manager.windowOrigin(for: noteId)
+                            manager.spawnNewVoiceOpenWidget(near: origin)
+                        },
+                        onDelete: {
+                            manager.closeWidget(noteId: noteId)
+                        }
+                    )
+                    .padding(30)
                 case .notes:
                     FreeformNoteCardView(
                         note: binding,

@@ -168,6 +168,9 @@ public final class NoteStore {
                 case .linear:
                     loadedNotes[i].width = 586
                     loadedNotes[i].height = 364
+                case .voiceOpen:
+                    loadedNotes[i].width = 281
+                    loadedNotes[i].height = 364
                 }
             }
             self.notes = loadedNotes
@@ -283,7 +286,7 @@ public final class NoteStore {
     }
     
     public func notes(in folderId: UUID?) -> [NoteCard] {
-        return notes.filter { $0.folderId == folderId && $0.cardType != .finder && $0.cardType != .folders && $0.cardType != .nowPlaying && $0.cardType != .linear }
+        return notes.filter { $0.folderId == folderId && $0.cardType != .finder && $0.cardType != .folders && $0.cardType != .nowPlaying && $0.cardType != .linear && $0.cardType != .voiceOpen }
     }
     
     // MARK: - Card Actions

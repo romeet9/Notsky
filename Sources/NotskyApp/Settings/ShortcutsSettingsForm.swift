@@ -25,6 +25,12 @@ struct ShortcutsSettingsForm: View {
             LabeledContent("New Freeform Note Card") {
                 ShortcutBadge("⌥ ⌘ N")
             }
+            LabeledContent("New Voice Card") {
+                ShortcutBadge("⌥ ⌘ V")
+            }
+            LabeledContent("Voice (hold to talk)") {
+                ShortcutBadge(LocalizedStringKey(VoiceOpenService.shared.hotKeyPreset.display))
+            }
             LabeledContent("Open Notsky Next Settings") {
                 ShortcutBadge("⌘ ,")
             }

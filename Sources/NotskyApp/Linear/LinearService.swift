@@ -370,31 +370,6 @@ public final class LinearService {
         }
     }
 
-    /// Creates an issue assigned to the viewer, then refreshes. Returns true on success.
-    @discardableResult
-    public func createIssue(title: String, teamId: String, dueDate: String? = nil) async -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let key = apiKey, let viewerId = viewer?.id else { return false }
-        var input: [String: Any] = ["teamId": teamId, "title": trimmed, "assigneeId": viewerId]
-        if let dueDate { input["dueDate"] = dueDate }
-        do {
-            let data: IssueCreateData = try await Self.send(
-                query: Self.createMutation,
-                variables: ["input": input],
-                key: key
-            )
-            guard data.issueCreate.success else { throw LinearError.message("Linear did not create the issue.") }
-            await performRefresh()
-            return true
-        } catch let error as LinearError {
-            showToast("Couldn't create issue. " + error.userMessage)
-            return false
-        } catch {
-            showToast("Couldn't create issue.")
-            return false
-        }
-    }
-
     // MARK: Actions
 
     public func open(_ issue: LinearIssue) {
@@ -480,12 +455,6 @@ public final class LinearService {
     }
     """
 
-    private static let createMutation = """
-    mutation($input: IssueCreateInput!) {
-      issueCreate(input: $input) { success issue { id } }
-    }
-    """
-
     private struct ViewerOnly: Decodable { let viewer: LinearViewer }
     private struct ViewerIssues: Decodable {
         struct V: Decodable {
@@ -507,10 +476,6 @@ public final class LinearService {
     private struct IssueUpdateData: Decodable {
         struct P: Decodable { let success: Bool; let issue: IssueUpdateResult? }
         let issueUpdate: P
-    }
-    private struct IssueCreateData: Decodable {
-        struct P: Decodable { let success: Bool }
-        let issueCreate: P
     }
     private struct GraphQLEnvelope<D: Decodable>: Decodable {
         struct E: Decodable {
