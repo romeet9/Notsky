@@ -80,7 +80,7 @@ public struct VoiceOpenCardView: View {
             // 2. Glass sheet
             ZStack(alignment: .top) {
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
 
                 Group {
                     if service.phase == .needsPermission, let issue = service.permissionIssue {

@@ -182,7 +182,7 @@ public struct NoteCardView: View {
             ZStack(alignment: .top) {
                 // Frosted Glass Tint & Hardware Accelerated Material
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
 
                 // Main Sheet Content
                 VStack(spacing: 0) {
@@ -333,7 +333,7 @@ public struct NoteCardView: View {
                 .padding(.horizontal, 14)
                 .frame(height: 36)
                 .background(sheetBackgroundColor, in: Capsule())
-                .background(.ultraThinMaterial, in: Capsule())
+                .background(.cardMaterial, in: Capsule())
                 .overlay(
                     Capsule()
                         .strokeBorder(specularBorderGradient, lineWidth: 0.75)
@@ -357,7 +357,7 @@ public struct NoteCardView: View {
                     .padding(.horizontal, 12)
                     .frame(height: 36)
                     .background(buttonBackgroundColor(hovering: isHoveringTimer), in: Capsule())
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(.cardMaterial, in: Capsule())
                     .overlay(
                         Capsule()
                             .strokeBorder(note.isTimerRunning ? timerHighlightGradient : specularBorderGradient, lineWidth: 0.75)
@@ -384,7 +384,7 @@ public struct NoteCardView: View {
                     .foregroundStyle(buttonIconColor)
                     .frame(width: 40, height: 40)
                     .background(buttonBackgroundColor(hovering: isHoveringPlus), in: Circle())
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(.cardMaterial, in: Circle())
                     .overlay(
                         Circle()
                             .strokeBorder(specularBorderGradient, lineWidth: 0.75)
@@ -460,7 +460,7 @@ public struct NoteCardView: View {
             .padding(.horizontal, 12)
             .frame(height: 40)
             .background(buttonBackgroundColor(hovering: isHoveringDownload || isHoveringPin || isHoveringCycle || isHoveringGallery || isHoveringTrash), in: Capsule())
-            .background(.ultraThinMaterial, in: Capsule())
+            .background(.cardMaterial, in: Capsule())
             .overlay(
                 Capsule()
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)
@@ -494,7 +494,7 @@ public struct NoteCardView: View {
                     .padding(.horizontal, 14)
                     .frame(height: 38)
                     .background(buttonBackgroundColor(hovering: isHoveringNewCard), in: Capsule())
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(.cardMaterial, in: Capsule())
                     .overlay(
                         Capsule()
                             .strokeBorder(specularBorderGradient, lineWidth: 0.75)

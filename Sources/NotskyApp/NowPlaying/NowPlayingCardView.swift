@@ -74,7 +74,7 @@ public struct NowPlayingCardView: View {
             // 2. Foreground content sheet
             ZStack(alignment: .top) {
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
 
                 Group {
                     if let denied = service.permissionDeniedSource {

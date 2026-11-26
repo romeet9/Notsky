@@ -140,7 +140,7 @@ public struct LinearCardView: View {
 
             ZStack(alignment: .top) {
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
 
                 VStack(spacing: 0) {
                     switch service.status {
@@ -179,7 +179,7 @@ public struct LinearCardView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(sheetBackgroundColor, in: Capsule())
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .background(.cardMaterial, in: Capsule())
                         .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
                         .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
                         .padding(.horizontal, 16)
@@ -295,7 +295,7 @@ public struct LinearCardView: View {
         content()
             .frame(width: 36, height: 36)
             .background(buttonBackgroundColor(hovering: hovering), in: Circle())
-            .background(.ultraThinMaterial, in: Circle())
+            .background(.cardMaterial, in: Circle())
             .overlay(Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75))
             .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
             .contentShape(Circle())
@@ -570,7 +570,7 @@ public struct LinearCardView: View {
                     .padding(.horizontal, 18)
                     .frame(height: 36)
                     .background(buttonBackgroundColor(hovering: false), in: Capsule())
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .background(.cardMaterial, in: Capsule())
                     .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
                     .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.035), radius: 5, x: 0, y: 1.5)
                     .contentShape(Capsule())

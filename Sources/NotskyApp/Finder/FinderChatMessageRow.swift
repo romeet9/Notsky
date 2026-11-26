@@ -89,7 +89,7 @@ struct FinderChatMessageRow: View {
                         .padding(.horizontal, 13)
                         .padding(.vertical, 9)
                         .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .background(.cardMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .strokeBorder(specularBorderGradient, lineWidth: 0.75)
@@ -161,7 +161,7 @@ struct FinderChatMessageRow: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(.cardMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(specularBorderGradient, lineWidth: 0.75)
@@ -222,7 +222,7 @@ struct FinderChatMessageRow: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(.cardMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(specularBorderGradient, lineWidth: 0.75)

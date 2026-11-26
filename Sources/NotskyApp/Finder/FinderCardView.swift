@@ -97,7 +97,7 @@ public struct FinderCardView: View {
             ZStack(alignment: .top) {
                 // Frosted Glass Tint & Hardware Accelerated Material
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
                 
                 // Main Sheet Content
                 ZStack(alignment: .bottom) {
@@ -397,7 +397,7 @@ public struct FinderCardView: View {
         .padding(.trailing, 6)
         .frame(minHeight: 40)
         .background(composerFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(.cardThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(specularBorderGradient, lineWidth: 0.75)

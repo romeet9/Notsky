@@ -56,7 +56,7 @@ struct FinderFileTile: View {
             .padding(10)
             .frame(maxWidth: .infinity, minHeight: 96, maxHeight: 116)
             .background(sheetBackgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.cardMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)

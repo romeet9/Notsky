@@ -113,7 +113,7 @@ public struct FoldersCardView: View {
             // 2. Foreground Content Sheet
             ZStack(alignment: .top) {
                 sheetBackgroundColor
-                    .background(.ultraThinMaterial)
+                    .background(.cardMaterial)
                 
                 VStack(spacing: 0) {
                     topToolbar
@@ -367,7 +367,7 @@ public struct FoldersCardView: View {
             isDark ? Color(white: 0.18).opacity(0.9) : Color.white.opacity(0.9),
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(.cardMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(specularBorderGradient, lineWidth: 0.75)

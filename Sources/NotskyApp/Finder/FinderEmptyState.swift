@@ -57,7 +57,7 @@ struct FinderNotConnectedState: View {
                 .padding(.horizontal, 16)
                 .frame(height: 36)
                 .background(isDark ? Color(white: 0.18).opacity(0.88) : Color.white.opacity(0.88), in: Capsule())
-                .background(.thinMaterial, in: Capsule())
+                .background(.cardThinMaterial, in: Capsule())
                 .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
             }
             .buttonStyle(.plain)

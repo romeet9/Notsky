@@ -15,6 +15,25 @@ extension EnvironmentValues {
     }
 }
 
+/// Card glass. On the desktop it's live material; in the scrolling shelf it's a flat tint,
+/// because a material re-blurs what's behind it on every scroll frame.
+struct CardMaterial: ShapeStyle {
+    var thin = false
+
+    func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
+        if environment.isShelfCard {
+            let dark = environment.colorScheme == .dark
+            return AnyShapeStyle(dark ? Color(white: thin ? 0.20 : 0.17).opacity(0.92) : Color(white: thin ? 0.95 : 0.97).opacity(0.92))
+        }
+        return thin ? AnyShapeStyle(.thinMaterial) : AnyShapeStyle(.ultraThinMaterial)
+    }
+}
+
+extension ShapeStyle where Self == CardMaterial {
+    static var cardMaterial: CardMaterial { CardMaterial() }
+    static var cardThinMaterial: CardMaterial { CardMaterial(thin: true) }
+}
+
 /// The card's soft drop shadow. A shadow on a whole card renders the card offscreen every
 /// frame, so shelf copies (constant per view, never flips) skip it.
 struct CardDropShadow: ViewModifier {

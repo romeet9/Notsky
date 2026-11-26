@@ -33,7 +33,7 @@ struct SuggestedSearchCapsuleButton: View {
                 isDark ? Color.white.opacity(isHovering ? 0.24 : 0.16) : Color(white: 0.88).opacity(isHovering ? 0.96 : 0.85),
                 in: Capsule()
             )
-            .background(.thinMaterial, in: Capsule())
+            .background(.cardThinMaterial, in: Capsule())
             .overlay(
                 Capsule()
                     .strokeBorder(specularBorderGradient, lineWidth: 0.75)
