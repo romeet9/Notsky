@@ -76,7 +76,7 @@ struct VoiceSettingsForm: View {
         LabeledContent(title) {
             HStack(spacing: 8) {
                 if granted {
-                    Label("Allowed", systemImage: "checkmark.circle.fill")
+                    RemixLabel("Allowed", .checkboxCircleFill)
                         .foregroundStyle(.green)
                 } else if undetermined {
                     Button("Allow...") { voice.requestPermissions() }

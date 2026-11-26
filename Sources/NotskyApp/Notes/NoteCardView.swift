@@ -346,9 +346,7 @@ public struct NoteCardView: View {
                     toggleTimer()
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: note.isTimerRunning ? "pause.fill" : "play.fill")
-                            .accessibilityLabel(note.isTimerRunning ? LocalizedStringKey("Pause Timer") : LocalizedStringKey("Start Timer"))
-                            .scaledFont(size: 10, weight: .bold)
+                        RemixImage(note.isTimerRunning ? .pauseFill : .playFill, scaledSize: 11.5, accessibilityLabel: note.isTimerRunning ? LocalizedStringKey("Pause Timer") : LocalizedStringKey("Start Timer"))
                             .foregroundStyle(note.isTimerRunning ? Color.orange : buttonIconColor)
                         
                         Text(timeString)
@@ -382,8 +380,7 @@ public struct NoteCardView: View {
         HStack {
             // Left (+) Button (40 × 40 pt)
             Button(action: toggleTaskInput) {
-                Image(systemName: isAddingTask ? "xmark" : "plus")
-                    .scaledFont(size: 15, weight: .medium)
+                RemixImage(isAddingTask ? .closeLine : .addLine, scaledSize: 17.5)
                     .foregroundStyle(buttonIconColor)
                     .frame(width: 40, height: 40)
                     .background(buttonBackgroundColor(hovering: isHoveringPlus), in: Circle())
@@ -406,8 +403,7 @@ public struct NoteCardView: View {
                 Button(action: {
                     CardActions.download(note: note, isDark: isDark, isDownloaded: $isDownloaded)
                 }) {
-                    Image(systemName: isDownloaded ? "checkmark" : "arrow.down.to.line")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(isDownloaded ? .checkLine : .downloadLine, scaledSize: 15)
                         .foregroundStyle(isDownloaded ? Color.green : buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -418,8 +414,7 @@ public struct NoteCardView: View {
                 Button(action: {
                     CardActions.togglePinned($note, haptic: true)
                 }) {
-                    Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(note.isPinned ? .pushpinFill : .pushpinLine, scaledSize: 15)
                         .foregroundStyle(note.isPinned ? Color.orange : buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -430,8 +425,7 @@ public struct NoteCardView: View {
                 Button(action: {
                     cycleWallpaper()
                 }) {
-                    Image(systemName: "arrow.clockwise")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(.refreshLine, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -443,8 +437,7 @@ public struct NoteCardView: View {
                     SensoryFeedback.buttonClicked()
                     selectCustomHeaderImage()
                 }) {
-                    Image(systemName: "photo.on.rectangle")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(.imageLine, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -456,8 +449,7 @@ public struct NoteCardView: View {
                     SensoryFeedback.taskDeleted()
                     onDelete()
                 }) {
-                    Image(systemName: "trash")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(.deleteBinLine, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)

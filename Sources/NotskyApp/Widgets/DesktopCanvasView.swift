@@ -84,7 +84,7 @@ public struct DesktopCanvasView: View {
                             store.addNote()
                         }
                     }) {
-                        Label("New Task Group", systemImage: "plus.circle.fill")
+                        RemixLabel("New Task Group", .addCircleFill)
                             .scaledFont(size: 13, weight: .medium)
                     }
                     .buttonStyle(.plain)
@@ -99,7 +99,7 @@ public struct DesktopCanvasView: View {
                             store.addFreeformNote()
                         }
                     }) {
-                        Label("New Notes Card", systemImage: "doc.text.fill")
+                        RemixLabel("New Notes Card", .fileTextFill)
                             .scaledFont(size: 13, weight: .medium)
                     }
                     .buttonStyle(.plain)
@@ -114,7 +114,7 @@ public struct DesktopCanvasView: View {
                             store.addFoldersNote()
                         }
                     }) {
-                        Label("New Folders", systemImage: "folder.fill")
+                        RemixLabel("New Folders", .folderFill)
                             .scaledFont(size: 13, weight: .medium)
                     }
                     .buttonStyle(.plain)
@@ -129,7 +129,7 @@ public struct DesktopCanvasView: View {
                             useDesktopBackground.toggle()
                         }
                     }) {
-                        Label(useDesktopBackground ? LocalizedStringKey("Desktop Wallpaper") : LocalizedStringKey("System Background"), systemImage: "macwindow")
+                        RemixLabel(useDesktopBackground ? LocalizedStringKey("Desktop Wallpaper") : LocalizedStringKey("System Background"), .windowLine)
                             .scaledFont(size: 13, weight: .medium)
                     }
                     .buttonStyle(.plain)

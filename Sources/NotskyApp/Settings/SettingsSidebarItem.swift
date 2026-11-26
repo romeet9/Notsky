@@ -40,20 +40,20 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
         }
     }
     
-    public var icon: String {
+    var icon: RemixIcon {
         switch self {
-        case .general: return "gearshape"
-        case .sensory: return "speaker.wave.2"
-        case .widgets: return "square.grid.2x2"
-        case .folders: return "folder.fill"
-        case .appearance: return "paintpalette"
-        case .ai: return "sparkles"
-        case .linear: return "checklist"
-        case .voice: return "waveform"
-        case .focusTimer: return "timer"
-        case .exportSharing: return "square.and.arrow.up"
-        case .shortcuts: return "command"
-        case .about: return "info.circle"
+        case .general: return .settings3Line
+        case .sensory: return .volumeUpLine
+        case .widgets: return .layoutGridLine
+        case .folders: return .folderFill
+        case .appearance: return .paletteLine
+        case .ai: return .sparklingLine
+        case .linear: return .listCheck
+        case .voice: return .voiceprintLine
+        case .focusTimer: return .timerLine
+        case .exportSharing: return .shareBoxLine
+        case .shortcuts: return .commandLine
+        case .about: return .informationLine
         }
     }
 }

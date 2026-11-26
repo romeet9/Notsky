@@ -8,8 +8,7 @@ struct FolderNotesEmptyState: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .scaledFont(size: 36, weight: .light)
+            RemixImage(.fileSearchLine, scaledSize: 41.5)
                 .foregroundStyle(isDark ? Color.white.opacity(0.4) : Color.black.opacity(0.35))
             
             Text("No Notes in \"\(folder.name)\"")

@@ -22,11 +22,11 @@ public enum PomodoroPreset: String, CaseIterable {
         }
     }
     
-    public var icon: String {
+    var icon: RemixIcon {
         switch self {
-        case .focus: return "flame.fill"
-        case .shortBreak: return "cup.and.saucer.fill"
-        case .longBreak: return "bed.double.fill"
+        case .focus: return .fireFill
+        case .shortBreak: return .cupFill
+        case .longBreak: return .hotelBedFill
         }
     }
     

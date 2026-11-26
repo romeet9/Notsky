@@ -10,8 +10,7 @@ struct AboutSettingsForm: View {
     var body: some View {
         Section {
             HStack(spacing: 16) {
-                Image(systemName: "note.text")
-                    .scaledFont(size: 32, weight: .light)
+                RemixImage(.stickyNoteLine, scaledSize: 37)
                     .foregroundStyle(.primary)
                     .frame(width: 52, height: 52)
                     .background(

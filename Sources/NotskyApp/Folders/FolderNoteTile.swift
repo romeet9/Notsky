@@ -28,8 +28,7 @@ struct FolderNoteTile: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Top Row: Icon + Word/Task count
                 HStack(alignment: .center) {
-                    Image(systemName: isTasks ? "checklist" : "doc.text.fill")
-                        .scaledFont(size: 18, weight: .semibold)
+                    RemixImage(isTasks ? .listCheck : .fileTextFill, scaledSize: 20.5)
                         .foregroundStyle(isTasks ? Color.orange.opacity(0.9) : Color.indigo.opacity(0.9))
                     
                     Spacer(minLength: 4)

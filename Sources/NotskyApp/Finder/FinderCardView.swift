@@ -147,8 +147,7 @@ public struct FinderCardView: View {
         HStack(spacing: 8) {
             // Notsky AI title capsule
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .scaledFont(size: 11, weight: .semibold)
+                RemixImage(.sparklingLine, scaledSize: 12.5)
                     .foregroundStyle(.red)
                 
                 Text("AI")
@@ -191,9 +190,7 @@ public struct FinderCardView: View {
                     isWorking = false
                 }
             }) {
-                Image(systemName: "square.and.pencil")
-                    .accessibilityLabel("Clear chat")
-                    .scaledFont(size: 13, weight: .semibold)
+                RemixImage(.editBoxLine, scaledSize: 15, accessibilityLabel: "Clear chat")
                     .foregroundStyle(isDark ? .white.opacity(0.9) : .black.opacity(0.75))
                     .frame(width: 36, height: 36)
                     .background(buttonBackgroundColor(hovering: isHoveringPlus), in: Circle())
@@ -212,8 +209,7 @@ public struct FinderCardView: View {
                     SensoryFeedback.buttonClicked()
                     SettingsWindowManager.shared.showSettings(item: .ai)
                 }) {
-                    Image(systemName: "key.fill")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.key2Fill, scaledSize: 14.5)
                         .foregroundStyle(isConnected ? Color.green : (isDark ? .white.opacity(0.5) : .black.opacity(0.4)))
                 }
                 .buttonStyle(.plain)
@@ -228,8 +224,7 @@ public struct FinderCardView: View {
                         WidgetWindowManager.shared.setPinned(note.isPinned, for: note.id)
                     }
                 }) {
-                    Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(note.isPinned ? .pushpinFill : .pushpinLine, scaledSize: 14.5)
                         .foregroundStyle(note.isPinned ? Color.orange : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
                 }
                 .buttonStyle(.plain)
@@ -239,8 +234,7 @@ public struct FinderCardView: View {
                 Button(action: {
                     cycleWallpaper()
                 }) {
-                    Image(systemName: "arrow.clockwise")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.refreshLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -252,8 +246,7 @@ public struct FinderCardView: View {
                     SensoryFeedback.buttonClicked()
                     selectCustomHeaderImage()
                 }) {
-                    Image(systemName: "photo.on.rectangle")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.imageLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -265,8 +258,7 @@ public struct FinderCardView: View {
                     SensoryFeedback.buttonClicked()
                     onDelete()
                 }) {
-                    Image(systemName: "trash")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.deleteBinLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -341,8 +333,7 @@ public struct FinderCardView: View {
         HStack(spacing: 6) {
             // macOS Spotlight Style Input Bar
             HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .scaledFont(size: 13, weight: .medium)
+                RemixImage(.sparklingLine, scaledSize: 15)
                     .foregroundStyle(isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.5))
                     .padding(.top, 9)
                 
@@ -365,9 +356,7 @@ public struct FinderCardView: View {
                 
                 if !inputText.isEmpty {
                     Button(action: { sendMessage() }) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .accessibilityLabel("Send")
-                            .scaledFont(size: 18)
+                        RemixImage(.arrowUpCircleFill, scaledSize: 20.5, accessibilityLabel: "Send")
                             .foregroundStyle(isDark ? .white : .black)
                     }
                     .buttonStyle(.plain)
@@ -394,8 +383,7 @@ public struct FinderCardView: View {
                 NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser)
             }) {
                 if cardWidth < 340 {
-                    Image(systemName: "folder.fill")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.folderFill, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
                         .frame(width: 36, height: 36)
                         .background(

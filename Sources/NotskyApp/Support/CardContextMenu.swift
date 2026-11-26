@@ -12,21 +12,21 @@ struct CardContextMenu: View {
 
     var body: some View {
         Button(action: downloadImage) {
-            Label("Download 4K Card Image (Downloads)", systemImage: "arrow.down.to.line")
+            RemixLabel("Download 4K Card Image (Downloads)", .downloadLine)
         }
 
         Button(action: { CardImageExporter.saveCardImageAs(note: note, isDark: isDark) }) {
-            Label("Save 4K Card Image As...", systemImage: "square.and.arrow.down")
+            RemixLabel("Save 4K Card Image As...", .saveLine)
         }
 
         Divider()
 
         Button(action: onChangeHeaderImage) {
-            Label("Change Header Image...", systemImage: "photo.on.rectangle")
+            RemixLabel("Change Header Image...", .imageLine)
         }
 
         Button(action: togglePinned) {
-            Label(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), systemImage: note.isPinned ? "pin.slash" : "pin")
+            RemixLabel(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), note.isPinned ? .unpinLine : .pushpinLine)
         }
 
         Divider()
@@ -34,7 +34,7 @@ struct CardContextMenu: View {
         Menu("Move to Folder") {
             Button(action: { move(to: nil) }) {
                 if note.folderId == nil {
-                    Label("None (Uncategorized)", systemImage: "checkmark")
+                    RemixLabel("None (Uncategorized)", .checkLine)
                 } else {
                     Text("None (Uncategorized)")
                 }
@@ -44,7 +44,7 @@ struct CardContextMenu: View {
                 Divider()
                 ForEach(folders) { folder in
                     Button(action: { move(to: folder.id) }) {
-                        Label(folder.name, systemImage: note.folderId == folder.id ? "checkmark" : folder.icon)
+                        RemixLabel(verbatim: folder.name, note.folderId == folder.id ? .checkLine : RemixIcon(legacyName: folder.icon))
                     }
                 }
             }
@@ -53,7 +53,7 @@ struct CardContextMenu: View {
         Divider()
 
         Button(role: .destructive, action: delete) {
-            Label("Delete Note Widget", systemImage: "trash")
+            RemixLabel("Delete Note Widget", .deleteBinLine)
         }
     }
 

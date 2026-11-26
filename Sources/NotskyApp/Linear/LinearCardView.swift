@@ -146,14 +146,14 @@ public struct LinearCardView: View {
                     switch service.status {
                     case .notConnected:
                         messageState(
-                            icon: "link",
+                            icon: .link,
                             title: String(localized: "Connect Linear"),
                             text: String(localized: "Connect your Linear account to see the issues assigned to you."),
                             button: String(localized: "Connect Linear")
                         )
                     case .unauthorized:
                         messageState(
-                            icon: "lock.fill",
+                            icon: .lockFill,
                             title: String(localized: "Reconnect Linear"),
                             text: String(localized: "Linear rejected your API key."),
                             button: String(localized: "Reconnect Linear")
@@ -216,8 +216,7 @@ public struct LinearCardView: View {
         HStack(spacing: 8) {
             WidgetHeaderCapsule(isDark: isDark, baseOpacity: settings.backgroundOpacity) {
                 HStack(spacing: 6) {
-                    Image(systemName: "checklist")
-                        .scaledFont(size: 14, weight: .semibold)
+                    RemixImage(.listCheck, scaledSize: 16)
                         .foregroundStyle(accent)
                     Text("Linear")
                         .scaledFont(size: 15, weight: .medium)
@@ -241,8 +240,7 @@ public struct LinearCardView: View {
                                 .controlSize(.small)
                                 .scaleEffect(0.7)
                         } else {
-                            Image(systemName: "arrow.clockwise")
-                                .scaledFont(size: 14, weight: .semibold)
+                            RemixImage(.refreshLine, scaledSize: 16)
                                 .foregroundStyle(primaryText.opacity(0.9))
                         }
                     }
@@ -489,23 +487,22 @@ public struct LinearCardView: View {
     // MARK: - Banner (offline / rate limited / failed)
 
     private struct Banner {
-        let icon: String
+        let icon: RemixIcon
         let text: String
     }
 
     private var banner: Banner? {
         switch service.status {
-        case .offline: return Banner(icon: "wifi.slash", text: String(localized: "Offline. Showing last known issues."))
-        case .rateLimited: return Banner(icon: "hourglass", text: String(localized: "Rate limited. Retrying soon."))
-        case .failed(let m): return Banner(icon: "exclamationmark.triangle.fill", text: m)
+        case .offline: return Banner(icon: .wifiOffLine, text: String(localized: "Offline. Showing last known issues."))
+        case .rateLimited: return Banner(icon: .hourglassLine, text: String(localized: "Rate limited. Retrying soon."))
+        case .failed(let m): return Banner(icon: .alertFill, text: m)
         default: return nil
         }
     }
 
     private func bannerView(_ banner: Banner) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: banner.icon)
-                .scaledFont(size: 12, weight: .semibold)
+            RemixImage(banner.icon, scaledSize: 14)
                 .foregroundStyle(Color.orange)
             Text(banner.text)
                 .scaledFont(size: 13, weight: .medium)
@@ -546,11 +543,10 @@ public struct LinearCardView: View {
 
     // MARK: - Message states (not connected / unauthorized)
 
-    private func messageState(icon: String, title: String, text: String, button: String) -> some View {
+    private func messageState(icon: RemixIcon, title: String, text: String, button: String) -> some View {
         VStack(spacing: 10) {
             Spacer()
-            Image(systemName: icon)
-                .scaledFont(size: 20, weight: .semibold)
+            RemixImage(icon, scaledSize: 23)
                 .foregroundStyle(accent)
                 .frame(width: 56, height: 56)
                 .background(buttonBackgroundColor(hovering: false), in: Circle())
@@ -594,17 +590,17 @@ public struct LinearCardView: View {
         Button {
             CardWallpaperActions.chooseCustomImage($note, panelTitle: String(localized: "Select Linear Card Background Image"))
         } label: {
-            Label("Change Header Image...", systemImage: "photo.on.rectangle")
+            RemixLabel("Change Header Image...", .imageLine)
         }
         Button {
             CardWallpaperActions.cycle($note)
         } label: {
-            Label("Next Wallpaper in Pack", systemImage: "arrow.clockwise")
+            RemixLabel("Next Wallpaper in Pack", .refreshLine)
         }
         Button {
             CardActions.togglePinned($note, haptic: false)
         } label: {
-            Label(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), systemImage: note.isPinned ? "pin.slash" : "pin")
+            RemixLabel(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), note.isPinned ? .unpinLine : .pushpinLine)
         }
         Divider()
         Button("New Linear Card") { onSpawnWidget() }
@@ -612,7 +608,7 @@ public struct LinearCardView: View {
             SensoryFeedback.taskDeleted()
             onDelete()
         } label: {
-            Label("Delete Widget", systemImage: "trash")
+            RemixLabel("Delete Widget", .deleteBinLine)
         }
     }
 }
@@ -796,8 +792,7 @@ private struct LinearIssueRow: View {
             SensoryFeedback.buttonClicked()
             onOpen()
         } label: {
-            Image(systemName: "arrow.up.right")
-                .scaledFont(size: 11, weight: .bold)
+            RemixImage(.arrowRightUpLine, scaledSize: 12.5)
                 .foregroundStyle(secondaryText)
                 .frame(width: 20, height: 20)
                 .contentShape(Rectangle())

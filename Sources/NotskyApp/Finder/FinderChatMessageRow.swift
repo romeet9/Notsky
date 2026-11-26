@@ -40,8 +40,7 @@ struct FinderChatMessageRow: View {
                 if !msg.content.isEmpty {
                     HStack(alignment: .top, spacing: 6) {
                         if msg.isError == true {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .scaledFont(size: 12, weight: .semibold)
+                            RemixImage(.alertFill, scaledSize: 14)
                                 .foregroundStyle(.orange)
                                 .padding(.top, 3)
                                 .accessibilityHidden(true)
@@ -99,8 +98,7 @@ struct FinderChatMessageRow: View {
         let wasUndone = agent.undone.contains(action.id)
         let canUndo = agent.canUndo(action.id)
         return HStack(spacing: 6) {
-            Image(systemName: wasUndone ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
-                .scaledFont(size: 12, weight: .semibold)
+            RemixImage(wasUndone ? .arrowGoBackFill : .checkboxCircleFill, scaledSize: 14)
                 .foregroundStyle(wasUndone ? Color.gray : Color.green)
                 .accessibilityHidden(true)
             Text(wasUndone ? String(localized: "Undone: \(action.label)") : action.label)

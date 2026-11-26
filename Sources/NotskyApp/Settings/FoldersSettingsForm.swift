@@ -41,8 +41,7 @@ struct FoldersSettingsForm: View {
                 ForEach(store.folders) { folder in
                     let notesCount = store.notes(in: folder.id).count
                     HStack(spacing: 12) {
-                        Image(systemName: folder.icon)
-                            .scaledFont(size: 16)
+                        RemixImage(RemixIcon(legacyName: folder.icon), scaledSize: 18.5)
                             .foregroundStyle(.blue)
                             .frame(width: 24)
                         
@@ -86,7 +85,7 @@ struct FoldersSettingsForm: View {
                                 store.deleteFolder(id: folder.id)
                                 SensoryFeedback.taskDeleted()
                             } label: {
-                                Image(systemName: "trash")
+                                RemixImage(.deleteBinLine, size: 14)
                                     .foregroundStyle(.red)
                             }
                             .buttonStyle(.plain)
@@ -100,8 +99,7 @@ struct FoldersSettingsForm: View {
             
             // Add New Folder Row
             HStack(spacing: 10) {
-                Image(systemName: "folder.badge.plus")
-                    .scaledFont(size: 15)
+                RemixImage(.folderAddLine, scaledSize: 17.5)
                     .foregroundStyle(.blue)
                     .frame(width: 24)
                 

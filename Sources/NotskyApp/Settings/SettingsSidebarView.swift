@@ -38,7 +38,7 @@ public struct SettingsSidebarView: View {
     @ViewBuilder
     private func sidebarRow(for item: SettingsSidebarItem) -> some View {
         if searchText.isEmpty || item.localizedTitle.localizedStandardContains(searchText) {
-            Label(item.localizedTitle, systemImage: item.icon)
+            RemixLabel(verbatim: item.localizedTitle, item.icon)
                 .tag(item)
         }
     }

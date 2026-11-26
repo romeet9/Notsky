@@ -123,8 +123,7 @@ public struct VoiceOpenCardView: View {
         HStack(spacing: 8) {
             WidgetHeaderCapsule(isDark: isDark, baseOpacity: settings.backgroundOpacity) {
                 HStack(spacing: 6) {
-                    Image(systemName: "waveform")
-                        .scaledFont(size: 12, weight: .semibold)
+                    RemixImage(.voiceprintLine, scaledSize: 14)
                         .foregroundStyle(accent)
                     Text("Voice")
                         .scaledFont(size: 13, weight: .medium)
@@ -136,8 +135,7 @@ public struct VoiceOpenCardView: View {
             WidgetHeaderCapsule(isDark: isDark, baseOpacity: settings.backgroundOpacity) {
                 HStack(spacing: 5) {
                     if service.isActive && !service.hotKeyRegistered {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .scaledFont(size: 10, weight: .semibold)
+                        RemixImage(.alertFill, scaledSize: 11.5)
                             .foregroundStyle(.orange)
                     }
                     Text(hotKey)
@@ -338,22 +336,22 @@ public struct VoiceOpenCardView: View {
         Button {
             CardWallpaperActions.chooseCustomImage($note, panelTitle: String(localized: "Select Voice Card Background Image"))
         } label: {
-            Label("Change Header Image...", systemImage: "photo.on.rectangle")
+            RemixLabel("Change Header Image...", .imageLine)
         }
         Button {
             CardWallpaperActions.cycle($note)
         } label: {
-            Label("Next Wallpaper in Pack", systemImage: "arrow.clockwise")
+            RemixLabel("Next Wallpaper in Pack", .refreshLine)
         }
         Button {
             CardActions.togglePinned($note, haptic: false)
         } label: {
-            Label(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), systemImage: note.isPinned ? "pin.slash" : "pin")
+            RemixLabel(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), note.isPinned ? .unpinLine : .pushpinLine)
         }
         Button {
             SettingsWindowManager.shared.showSettings(item: .voice)
         } label: {
-            Label("Voice Settings...", systemImage: "waveform")
+            RemixLabel("Voice Settings...", .voiceprintLine)
         }
         Divider()
         Button("New Voice Card") { onSpawnWidget() }
@@ -361,7 +359,7 @@ public struct VoiceOpenCardView: View {
             SensoryFeedback.taskDeleted()
             onDelete()
         } label: {
-            Label("Delete Widget", systemImage: "trash")
+            RemixLabel("Delete Widget", .deleteBinLine)
         }
     }
 }

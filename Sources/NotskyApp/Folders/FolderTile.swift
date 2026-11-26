@@ -26,8 +26,7 @@ struct FolderTile: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Top Row: Folder Icon + Note Count Badge
                 HStack(alignment: .center) {
-                    Image(systemName: folder.icon.contains(".fill") ? folder.icon : "\(folder.icon).fill")
-                        .scaledFont(size: 20, weight: .semibold)
+                    RemixImage(RemixIcon(legacyName: folder.icon).filled, scaledSize: 23)
                         .foregroundStyle(.blue)
                     
                     Spacer(minLength: 4)
@@ -97,7 +96,7 @@ struct FolderTile: View {
                 manager.store.deleteFolder(id: folder.id)
                 SensoryFeedback.taskDeleted()
             }) {
-                Label("Delete Folder", systemImage: "trash")
+                RemixLabel("Delete Folder", .deleteBinLine)
             }
         }
     }

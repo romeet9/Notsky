@@ -304,8 +304,7 @@ public struct FreeformNoteCardView: View {
                                     Button(action: {
                                         deleteTab(at: index)
                                     }) {
-                                        Image(systemName: "xmark")
-                                            .scaledFont(size: 9, weight: .bold)
+                                        RemixImage(.closeLine, scaledSize: 10.5)
                                             .foregroundStyle(isActive ? taskTextColor.opacity(0.85) : taskTextColor.opacity(0.50))
                                             .frame(width: 14, height: 14)
                                             .contentShape(Rectangle())
@@ -346,7 +345,7 @@ public struct FreeformNoteCardView: View {
                                 Button(role: .destructive, action: {
                                     deleteTab(at: index)
                                 }) {
-                                    Label("Delete Tab", systemImage: "trash")
+                                    RemixLabel("Delete Tab", .deleteBinLine)
                                 }
                             }
                         }
@@ -358,9 +357,7 @@ public struct FreeformNoteCardView: View {
                     Button(action: {
                         addNewTab()
                     }) {
-                        Image(systemName: "plus")
-                            .accessibilityLabel("New Tab")
-                            .scaledFont(size: 12, weight: .bold)
+                        RemixImage(.addLine, scaledSize: 14, accessibilityLabel: "New Tab")
                             .foregroundStyle(buttonIconColor)
                             .frame(width: 36, height: 36)
                             .background(buttonBackgroundColor(hovering: isHoveringPlusTab), in: Circle())
@@ -397,8 +394,7 @@ public struct FreeformNoteCardView: View {
                 Button(action: {
                     formatActiveContentBold()
                 }) {
-                    Image(systemName: "bold")
-                        .scaledFont(size: 13, weight: .bold)
+                    RemixImage(.bold, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -410,8 +406,7 @@ public struct FreeformNoteCardView: View {
                 Button(action: {
                     formatActiveContentItalic()
                 }) {
-                    Image(systemName: "italic")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(.italic, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -423,8 +418,7 @@ public struct FreeformNoteCardView: View {
                 Button(action: {
                     formatActiveContentBullets()
                 }) {
-                    Image(systemName: "list.bullet")
-                        .scaledFont(size: 13, weight: .medium)
+                    RemixImage(.listUnordered, scaledSize: 15)
                         .foregroundStyle(buttonIconColor)
                 }
                 .buttonStyle(.plain)
@@ -451,8 +445,7 @@ public struct FreeformNoteCardView: View {
                     Button(action: {
                         CardActions.download(note: note, isDark: isDark, isDownloaded: $isDownloaded)
                     }) {
-                        Image(systemName: isDownloaded ? "checkmark" : "arrow.down.to.line")
-                            .scaledFont(size: 13, weight: .medium)
+                        RemixImage(isDownloaded ? .checkLine : .downloadLine, scaledSize: 15)
                             .foregroundStyle(isDownloaded ? Color.green : buttonIconColor)
                     }
                     .buttonStyle(.plain)
@@ -463,8 +456,7 @@ public struct FreeformNoteCardView: View {
                     Button(action: {
                         CardActions.togglePinned($note, haptic: true)
                     }) {
-                        Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                            .scaledFont(size: 13, weight: .medium)
+                        RemixImage(note.isPinned ? .pushpinFill : .pushpinLine, scaledSize: 15)
                             .foregroundStyle(note.isPinned ? Color.orange : buttonIconColor)
                     }
                     .buttonStyle(.plain)
@@ -475,8 +467,7 @@ public struct FreeformNoteCardView: View {
                     Button(action: {
                         cycleWallpaper()
                     }) {
-                        Image(systemName: "arrow.clockwise")
-                            .scaledFont(size: 13, weight: .medium)
+                        RemixImage(.refreshLine, scaledSize: 15)
                             .foregroundStyle(buttonIconColor)
                     }
                     .buttonStyle(.plain)
@@ -489,8 +480,7 @@ public struct FreeformNoteCardView: View {
                         SensoryFeedback.buttonClicked()
                         selectCustomHeaderImage()
                     }) {
-                        Image(systemName: "photo.on.rectangle")
-                            .scaledFont(size: 13, weight: .medium)
+                        RemixImage(.imageLine, scaledSize: 15)
                             .foregroundStyle(buttonIconColor)
                     }
                     .buttonStyle(.plain)
@@ -503,8 +493,7 @@ public struct FreeformNoteCardView: View {
                         SensoryFeedback.taskDeleted()
                         onDelete()
                     }) {
-                        Image(systemName: "trash")
-                            .scaledFont(size: 13, weight: .medium)
+                        RemixImage(.deleteBinLine, scaledSize: 15)
                             .foregroundStyle(buttonIconColor)
                     }
                     .buttonStyle(.plain)

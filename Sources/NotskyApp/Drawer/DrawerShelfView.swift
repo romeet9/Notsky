@@ -246,8 +246,7 @@ public struct DrawerShelfView: View {
     @ViewBuilder
     private var emptyShelfState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "square.stack.3d.up.slash")
-                .scaledFont(size: 42, weight: .light)
+            RemixImage(.stackLine, scaledSize: 48.5)
                 .foregroundStyle(isDark ? Color.white.opacity(0.35) : Color.black.opacity(0.30))
             
             Text("Your Shelf is Empty")
@@ -290,8 +289,7 @@ public struct DrawerShelfView: View {
                     manager.spawnNewFoldersWidget()
                 }) {
                     HStack(spacing: 5) {
-                        Image(systemName: "folder.fill")
-                            .scaledFont(size: 11)
+                        RemixImage(.folderFill, scaledSize: 12.5)
                         Text("Add Folders")
                             .scaledFont(size: 13, weight: .medium)
                     }
@@ -307,8 +305,7 @@ public struct DrawerShelfView: View {
                     manager.spawnNewFinderWidget()
                 }) {
                     HStack(spacing: 5) {
-                        Image(systemName: "sparkles")
-                            .scaledFont(size: 11)
+                        RemixImage(.sparklingLine, scaledSize: 12.5)
                         Text("Add AI Finder")
                             .scaledFont(size: 13, weight: .medium)
                     }

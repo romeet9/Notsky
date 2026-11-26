@@ -175,12 +175,10 @@ public struct FoldersCardView: View {
                     }
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .scaledFont(size: 11, weight: .bold)
+                        RemixImage(.arrowLeftSLine, scaledSize: 12.5)
                             .foregroundStyle(isDark ? .white : .black)
                         
-                        Image(systemName: "folder.fill")
-                            .scaledFont(size: 12, weight: .semibold)
+                        RemixImage(.folderFill, scaledSize: 14)
                             .foregroundStyle(.blue)
                         
                         Text(folder.name)
@@ -216,8 +214,7 @@ public struct FoldersCardView: View {
             } else {
                 // Folders Title Capsule
                 HStack(spacing: 6) {
-                    Image(systemName: "folder.fill")
-                        .scaledFont(size: 12, weight: .semibold)
+                    RemixImage(.folderFill, scaledSize: 14)
                         .foregroundStyle(.blue)
                     
                     Text("Folders")
@@ -276,8 +273,7 @@ public struct FoldersCardView: View {
                     }
                 }
             }) {
-                Image(systemName: isCreatingFolder ? "xmark" : "plus")
-                    .scaledFont(size: 13, weight: .semibold)
+                RemixImage(isCreatingFolder ? .closeLine : .addLine, scaledSize: 15)
                     .foregroundStyle(isDark ? .white.opacity(0.9) : .black.opacity(0.75))
                     .frame(width: 36, height: 36)
                     .background(buttonBackgroundColor(hovering: isHoveringPlus), in: Circle())
@@ -299,8 +295,7 @@ public struct FoldersCardView: View {
                         WidgetWindowManager.shared.setPinned(note.isPinned, for: note.id)
                     }
                 }) {
-                    Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(note.isPinned ? .pushpinFill : .pushpinLine, scaledSize: 14.5)
                         .foregroundStyle(note.isPinned ? Color.orange : (isDark ? .white.opacity(0.85) : .black.opacity(0.75)))
                 }
                 .buttonStyle(.plain)
@@ -310,8 +305,7 @@ public struct FoldersCardView: View {
                 Button(action: {
                     cycleWallpaper()
                 }) {
-                    Image(systemName: "arrow.clockwise")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.refreshLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -322,8 +316,7 @@ public struct FoldersCardView: View {
                     SensoryFeedback.buttonClicked()
                     selectCustomHeaderImage()
                 }) {
-                    Image(systemName: "photo.on.rectangle")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.imageLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -334,8 +327,7 @@ public struct FoldersCardView: View {
                     SensoryFeedback.buttonClicked()
                     onDelete()
                 }) {
-                    Image(systemName: "trash")
-                        .scaledFont(size: 12.5, weight: .medium)
+                    RemixImage(.deleteBinLine, scaledSize: 14.5)
                         .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.75))
                 }
                 .buttonStyle(.plain)
@@ -352,8 +344,7 @@ public struct FoldersCardView: View {
     // MARK: - New Folder Input Field
     private var newFolderInputField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "folder.fill.badge.plus")
-                .scaledFont(size: 14)
+            RemixImage(.folderAddFill, scaledSize: 16)
                 .foregroundStyle(.blue)
             
             TextField("Folder Name", text: $newFolderName)

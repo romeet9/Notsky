@@ -5,6 +5,10 @@ import AppKit
 struct NotskyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    init() {
+        RemixIcon.registerFont()
+    }
+
     var body: some Scene {
         MenuBarExtra {
             MenuBarContentView()

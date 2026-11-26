@@ -24,8 +24,8 @@ public final class MenuBarIconManager: @unchecked Sendable {
             }
         }
         
-        let fallback = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Notsky Next") ?? NSImage()
-        fallback.isTemplate = true
+        let fallback = NSImage.remix(.stickyNoteLine, size: 16)
+        fallback.accessibilityDescription = "Notsky Next"
         return fallback
     }()
     

@@ -7,8 +7,7 @@ struct FoldersEmptyState: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "folder.fill.badge.questionmark")
-                .scaledFont(size: 36, weight: .light)
+            RemixImage(.folderUnknowFill, scaledSize: 41.5)
                 .foregroundStyle(isDark ? Color.white.opacity(0.4) : Color.black.opacity(0.35))
             
             Text("No Folders Yet")

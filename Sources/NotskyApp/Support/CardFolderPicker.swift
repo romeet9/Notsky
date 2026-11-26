@@ -15,8 +15,7 @@ struct CardFolderPicker: View {
             }) {
                 HStack(spacing: 6) {
                     let assignedFolder = WidgetWindowManager.shared.store.folder(for: note.folderId)
-                    Image(systemName: "folder.fill")
-                        .scaledFont(size: 11.5, weight: .semibold)
+                    RemixImage(.folderFill, scaledSize: 13)
                         .foregroundStyle(.black)
                     
                     Text(assignedFolder?.name ?? String(localized: "Folder"))
@@ -24,8 +23,7 @@ struct CardFolderPicker: View {
                         .foregroundStyle(.black)
                         .lineLimit(1)
                     
-                    Image(systemName: "chevron.up.chevron.down")
-                        .scaledFont(size: 8, weight: .bold)
+                    RemixImage(.expandUpDownLine, scaledSize: 9)
                         .foregroundStyle(Color.black.opacity(0.65))
                 }
                 .padding(.horizontal, 14)
@@ -50,16 +48,14 @@ struct CardFolderPicker: View {
                         select(folderId: nil)
                     }) {
                         HStack {
-                            Image(systemName: "folder.fill")
-                                .scaledFont(size: 11)
+                            RemixImage(.folderFill, scaledSize: 12.5)
                                 .foregroundStyle(.secondary)
                             Text("None (Uncategorized)")
                                 .scaledFont(size: 12)
                                 .foregroundStyle(.primary)
                             Spacer()
                             if note.folderId == nil {
-                                Image(systemName: "checkmark")
-                                    .scaledFont(size: 11, weight: .bold)
+                                RemixImage(.checkLine, scaledSize: 12.5)
                                     .foregroundStyle(Color.accentColor)
                             }
                         }
@@ -78,16 +74,14 @@ struct CardFolderPicker: View {
                                 select(folderId: folder.id)
                             }) {
                                 HStack {
-                                    Image(systemName: "folder.fill")
-                                        .scaledFont(size: 11)
+                                    RemixImage(.folderFill, scaledSize: 12.5)
                                         .foregroundStyle(Color.accentColor)
                                     Text(folder.name)
                                         .scaledFont(size: 12)
                                         .foregroundStyle(.primary)
                                     Spacer()
                                     if note.folderId == folder.id {
-                                        Image(systemName: "checkmark")
-                                            .scaledFont(size: 11, weight: .bold)
+                                        RemixImage(.checkLine, scaledSize: 12.5)
                                             .foregroundStyle(Color.accentColor)
                                     }
                                 }
@@ -108,8 +102,7 @@ struct CardFolderPicker: View {
                         newFolderNameInput = ""
                     }) {
                         HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .scaledFont(size: 11.5)
+                            RemixImage(.addCircleFill, scaledSize: 13)
                                 .foregroundStyle(Color.accentColor)
                             Text("New Folder...")
                                 .scaledFont(size: 12, weight: .medium)

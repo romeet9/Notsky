@@ -119,8 +119,7 @@ public struct NowPlayingCardView: View {
                             .resizable()
                             .frame(width: 16, height: 16)
                     } else {
-                        Image(systemName: "music.note")
-                            .scaledFont(size: 12, weight: .semibold)
+                        RemixImage(.music2Line, scaledSize: 14)
                             .foregroundStyle(accent)
                     }
                     Text(service.sourceName ?? "Now Playing")
@@ -194,8 +193,7 @@ public struct NowPlayingCardView: View {
         } else {
             ZStack {
                 HeaderImageView(imagePath: note.headerImagePath)
-                Image(systemName: "music.note")
-                    .scaledFont(size: artworkSize * 0.3, weight: .medium)
+                RemixImage(.music2Line, scaledSize: (artworkSize * 0.3) * 1.15)
                     .foregroundStyle(.white.opacity(0.9))
             }
         }
@@ -255,13 +253,13 @@ public struct NowPlayingCardView: View {
 
     private var controls: some View {
         HStack(spacing: 28) {
-            controlButton("backward.fill", size: 18, label: "Previous Track") {
+            controlButton(.skipBackFill, size: 18, label: "Previous Track") {
                 service.previousTrack()
             }
-            controlButton(service.isPlaying ? "pause.fill" : "play.fill", size: 26, label: service.isPlaying ? "Pause" : "Play") {
+            controlButton(service.isPlaying ? .pauseFill : .playFill, size: 26, label: service.isPlaying ? "Pause" : "Play") {
                 service.togglePlayPause()
             }
-            controlButton("forward.fill", size: 18, label: "Next Track") {
+            controlButton(.skipForwardFill, size: 18, label: "Next Track") {
                 service.nextTrack()
             }
         }
@@ -269,13 +267,12 @@ public struct NowPlayingCardView: View {
         .frame(height: 40)
     }
 
-    private func controlButton(_ symbol: String, size: CGFloat, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+    private func controlButton(_ symbol: RemixIcon, size: CGFloat, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button {
             SensoryFeedback.buttonClicked()
             action()
         } label: {
-            Image(systemName: symbol)
-                .scaledFont(size: size, weight: .semibold)
+            RemixImage(symbol, scaledSize: size * 1.15)
                 .foregroundStyle(primaryText.opacity(0.9))
                 .frame(width: 44, height: 40)
                 .contentShape(Rectangle())
@@ -290,8 +287,7 @@ public struct NowPlayingCardView: View {
     private var emptyState: some View {
         VStack(spacing: 10) {
             Spacer()
-            Image(systemName: "music.note")
-                .scaledFont(size: 38, weight: .light)
+            RemixImage(.music2Line, scaledSize: 43.5)
                 .foregroundStyle(secondaryText)
             Text("Not Playing")
                 .scaledFont(size: 16, weight: .semibold)
@@ -318,8 +314,7 @@ public struct NowPlayingCardView: View {
     private func permissionState(_ app: NowPlayingSource) -> some View {
         VStack(spacing: 10) {
             Spacer()
-            Image(systemName: "lock.fill")
-                .scaledFont(size: 30, weight: .light)
+            RemixImage(.lockFill, scaledSize: 34.5)
                 .foregroundStyle(secondaryText)
             Text("Allow Notsky Next to control \(app.displayName) in System Settings › Privacy & Security › Automation")
                 .scaledFont(size: 13, weight: .regular)
@@ -350,17 +345,17 @@ public struct NowPlayingCardView: View {
         Button {
             CardWallpaperActions.chooseCustomImage($note, panelTitle: String(localized: "Select Now Playing Card Background Image"))
         } label: {
-            Label("Change Header Image...", systemImage: "photo.on.rectangle")
+            RemixLabel("Change Header Image...", .imageLine)
         }
         Button {
             CardWallpaperActions.cycle($note)
         } label: {
-            Label("Next Wallpaper in Pack", systemImage: "arrow.clockwise")
+            RemixLabel("Next Wallpaper in Pack", .refreshLine)
         }
         Button {
             CardActions.togglePinned($note, haptic: false)
         } label: {
-            Label(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), systemImage: note.isPinned ? "pin.slash" : "pin")
+            RemixLabel(note.isPinned ? LocalizedStringKey("Unpin (Wallpaper Canvas Mode)") : LocalizedStringKey("Pin on Top (Floating)"), note.isPinned ? .unpinLine : .pushpinLine)
         }
         Divider()
         Button("New Now Playing Card") { onSpawnWidget() }
@@ -368,7 +363,7 @@ public struct NowPlayingCardView: View {
             SensoryFeedback.taskDeleted()
             onDelete()
         } label: {
-            Label("Delete Widget", systemImage: "trash")
+            RemixLabel("Delete Widget", .deleteBinLine)
         }
     }
 

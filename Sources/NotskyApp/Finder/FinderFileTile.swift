@@ -21,8 +21,7 @@ struct FinderFileTile: View {
         }) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
-                    Image(systemName: fileIconName(for: file.fileType))
-                        .scaledFont(size: 18, weight: .semibold)
+                    RemixImage(fileIcon(for: file.fileType), scaledSize: 20.5)
                         .foregroundStyle(fileBadgeColor(for: file.fileType))
                     
                     Spacer(minLength: 4)
@@ -80,15 +79,15 @@ struct FinderFileTile: View {
         .help("Click to open \(file.name). Option-click to reveal in Finder.")
     }
 
-    private func fileIconName(for ext: String) -> String {
+    private func fileIcon(for ext: String) -> RemixIcon {
         switch ext.lowercased() {
-        case "folder": return "folder.fill"
-        case "pdf": return "doc.text.fill"
-        case "xlsx", "xls", "csv", "numbers": return "tablecells.fill"
-        case "docx", "doc", "pages", "txt", "rtf": return "doc.fill"
-        case "png", "jpg", "jpeg", "heic", "webp": return "photo.fill"
-        case "swift", "py", "js", "ts", "json", "html", "css", "md": return "curlybraces"
-        default: return "doc.fill"
+        case "folder": return .folderFill
+        case "pdf": return .filePdf2Line
+        case "xlsx", "xls", "csv", "numbers": return .fileExcel2Line
+        case "docx", "doc", "pages", "txt", "rtf": return .fileTextLine
+        case "png", "jpg", "jpeg", "heic", "webp": return .fileImageLine
+        case "swift", "py", "js", "ts", "json", "html", "css", "md": return .bracesLine
+        default: return .fileLine
         }
     }
 

@@ -17,8 +17,7 @@ struct SuggestedSearchCapsuleButton: View {
             action()
         }) {
             HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass")
-                    .scaledFont(size: 11, weight: .semibold)
+                RemixImage(.searchLine, scaledSize: 12.5)
                     .foregroundStyle(isDark ? .white.opacity(0.85) : .black.opacity(0.7))
                 
                 Text(text)

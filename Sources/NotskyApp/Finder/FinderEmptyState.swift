@@ -11,8 +11,7 @@ struct FinderEmptyState: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .scaledFont(size: 16)
+                RemixImage(.sparklingLine, scaledSize: 18.5)
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
                 Text("Notsky AI")
@@ -54,8 +53,7 @@ struct FinderNotConnectedState: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .scaledFont(size: 16)
+                RemixImage(.sparklingLine, scaledSize: 18.5)
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
                 Text("Notsky AI")
@@ -73,8 +71,7 @@ struct FinderNotConnectedState: View {
                 SettingsWindowManager.shared.showSettings(item: .ai)
             } label: {
                 HStack(spacing: 7) {
-                    Image(systemName: "key.fill")
-                        .scaledFont(size: 11, weight: .semibold)
+                    RemixImage(.key2Fill, scaledSize: 12.5)
                     Text("Add Groq key")
                         .scaledFont(size: 13, weight: .semibold)
                 }

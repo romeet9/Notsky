@@ -18,7 +18,7 @@ struct AISettingsForm: View {
         Section("Groq") {
             if account.hasKey {
                 LabeledContent("Status") {
-                    Label("Connected", systemImage: "checkmark.circle.fill")
+                    RemixLabel("Connected", .checkboxCircleFill)
                         .foregroundStyle(.green)
                 }
                 if account.models.isEmpty {

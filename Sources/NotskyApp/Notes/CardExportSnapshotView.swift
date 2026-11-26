@@ -114,8 +114,7 @@ public struct CardExportSnapshotView: View {
                         // Notsky AI Title & Status Capsules
                         HStack(spacing: 8) {
                             HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                    .scaledFont(size: 11, weight: .semibold)
+                                RemixImage(.sparklingLine, scaledSize: 12.5)
                                     .foregroundStyle(Color.red)
                                 Text("AI")
                                     .scaledFont(size: 13, weight: .semibold, design: .default)
@@ -144,8 +143,7 @@ public struct CardExportSnapshotView: View {
                     } else if isFoldersType {
                         HStack(spacing: 8) {
                             HStack(spacing: 6) {
-                                Image(systemName: "folder.fill")
-                                    .scaledFont(size: 12, weight: .semibold)
+                                RemixImage(.folderFill, scaledSize: 14)
                                     .foregroundStyle(Color.blue)
                                 Text("Folders")
                                     .scaledFont(size: 13, weight: .semibold, design: .default)
@@ -191,8 +189,7 @@ public struct CardExportSnapshotView: View {
                             }
                             
                             // + Tab Button
-                            Image(systemName: "plus")
-                                .scaledFont(size: 11, weight: .bold)
+                            RemixImage(.addLine, scaledSize: 12.5)
                                 .foregroundStyle(buttonIconColor)
                                 .frame(width: 34, height: 34)
                                 .background(sheetBackgroundColor, in: Circle())
@@ -212,8 +209,7 @@ public struct CardExportSnapshotView: View {
                             
                             // Pomodoro Timer Pill
                             HStack(spacing: 5) {
-                                Image(systemName: note.isTimerRunning ? "pause.fill" : "play.fill")
-                                    .scaledFont(size: 9.5, weight: .bold)
+                                RemixImage(note.isTimerRunning ? .pauseFill : .playFill, scaledSize: 11)
                                     .foregroundStyle(note.isTimerRunning ? Color.orange : buttonIconColor)
                                 
                                 Text(timeString)
@@ -255,8 +251,7 @@ public struct CardExportSnapshotView: View {
                         HStack {
                             if isFinderType {
                                 // Add Button (+ Circle)
-                                Image(systemName: "plus")
-                                    .scaledFont(size: 13, weight: .semibold)
+                                RemixImage(.addLine, scaledSize: 15)
                                     .foregroundStyle(buttonIconColor)
                                     .frame(width: 36, height: 36)
                                     .background(sheetBackgroundColor, in: Circle())
@@ -265,14 +260,11 @@ public struct CardExportSnapshotView: View {
                             } else if isNotesType {
                                 // Formatting Capsule (Bold, Italic, Bullets)
                                 HStack(spacing: 12) {
-                                    Image(systemName: "bold")
-                                        .scaledFont(size: 12, weight: .bold)
+                                    RemixImage(.bold, scaledSize: 14)
                                         .foregroundStyle(buttonIconColor)
-                                    Image(systemName: "italic")
-                                        .scaledFont(size: 12, weight: .medium)
+                                    RemixImage(.italic, scaledSize: 14)
                                         .foregroundStyle(buttonIconColor)
-                                    Image(systemName: "list.bullet")
-                                        .scaledFont(size: 12, weight: .medium)
+                                    RemixImage(.listUnordered, scaledSize: 14)
                                         .foregroundStyle(buttonIconColor)
                                 }
                                 .padding(.horizontal, 13)
@@ -282,8 +274,7 @@ public struct CardExportSnapshotView: View {
                                 .shadow(color: Color.black.opacity(isDark ? 0.05 : 0.035), radius: 4, x: 0, y: 1)
                             } else {
                                 // Add Button (+ Circle)
-                                Image(systemName: "plus")
-                                    .scaledFont(size: 13, weight: .semibold)
+                                RemixImage(.addLine, scaledSize: 15)
                                     .foregroundStyle(buttonIconColor)
                                     .frame(width: 36, height: 36)
                                     .background(sheetBackgroundColor, in: Circle())
@@ -296,25 +287,19 @@ public struct CardExportSnapshotView: View {
                             // Right Action Capsule: Download, Pin, Cycle, Photo, Trash
                             HStack(spacing: 10) {
                                 if isFinderType {
-                                    Image(systemName: "key.fill")
-                                        .scaledFont(size: 11.5, weight: .medium)
+                                    RemixImage(.key2Fill, scaledSize: 13)
                                         .foregroundStyle(buttonIconColor)
                                 } else {
-                                    Image(systemName: "arrow.down.to.line")
-                                        .scaledFont(size: 11.5, weight: .medium)
+                                    RemixImage(.downloadLine, scaledSize: 13)
                                         .foregroundStyle(buttonIconColor)
                                 }
-                                Image(systemName: note.isPinned ? "pin.fill" : "pin")
-                                    .scaledFont(size: 11.5, weight: .medium)
+                                RemixImage(note.isPinned ? .pushpinFill : .pushpinLine, scaledSize: 13)
                                     .foregroundStyle(note.isPinned ? Color.orange : buttonIconColor)
-                                Image(systemName: "arrow.clockwise")
-                                    .scaledFont(size: 11.5, weight: .medium)
+                                RemixImage(.refreshLine, scaledSize: 13)
                                     .foregroundStyle(buttonIconColor)
-                                Image(systemName: "photo.on.rectangle")
-                                    .scaledFont(size: 11.5, weight: .medium)
+                                RemixImage(.imageLine, scaledSize: 13)
                                     .foregroundStyle(buttonIconColor)
-                                Image(systemName: "trash")
-                                    .scaledFont(size: 11.5, weight: .medium)
+                                RemixImage(.deleteBinLine, scaledSize: 13)
                                     .foregroundStyle(buttonIconColor)
                             }
                             .padding(.horizontal, 11)
@@ -344,8 +329,7 @@ public struct CardExportSnapshotView: View {
                                 // File Match Cards
                                 VStack(spacing: 5) {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "doc.text.fill")
-                                            .scaledFont(size: 13)
+                                        RemixImage(.fileTextFill, scaledSize: 15)
                                             .foregroundStyle(Color.red)
                                         VStack(alignment: .leading, spacing: 1) {
                                             Text("Tokens.swift")
@@ -363,8 +347,7 @@ public struct CardExportSnapshotView: View {
                                     .overlay { RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(specularBorderGradient, lineWidth: 0.5) }
 
                                     HStack(spacing: 8) {
-                                        Image(systemName: "app.badge.fill")
-                                            .scaledFont(size: 13)
+                                        RemixImage(.notificationBadgeFill, scaledSize: 15)
                                             .foregroundStyle(Color.orange)
                                         VStack(alignment: .leading, spacing: 1) {
                                             Text("AppIcon.icns")
@@ -384,9 +367,8 @@ public struct CardExportSnapshotView: View {
 
                                 // AI Assistant Synthesis
                                 HStack(alignment: .top, spacing: 6) {
-                                    Image(systemName: "sparkles")
+                                    RemixImage(.sparklingLine, scaledSize: 12.5)
                                         .foregroundStyle(Color.red)
-                                        .scaledFont(size: 11, weight: .bold)
                                         .padding(.top, 2)
                                     Text("Extracted liquid glass tokens and verified 1024×1024 Retina icon layers.")
                                         .scaledFont(size: 11.5, weight: .regular)
@@ -407,8 +389,7 @@ public struct CardExportSnapshotView: View {
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 6) {
                                         HStack {
-                                            Image(systemName: "folder.fill")
-                                                .scaledFont(size: 20)
+                                            RemixImage(.folderFill, scaledSize: 23)
                                                 .foregroundStyle(.blue)
                                             Spacer()
                                             Text("3 notes")
@@ -427,8 +408,7 @@ public struct CardExportSnapshotView: View {
 
                                     VStack(alignment: .leading, spacing: 6) {
                                         HStack {
-                                            Image(systemName: "person.crop.circle.fill")
-                                                .scaledFont(size: 20)
+                                            RemixImage(.accountCircleFill, scaledSize: 23)
                                                 .foregroundStyle(.blue)
                                             Spacer()
                                             Text("2 notes")
@@ -512,15 +492,13 @@ public struct CardExportSnapshotView: View {
                         // 3. Bottom Toolbar / Search Bar
                         if isFinderType {
                             HStack(spacing: 8) {
-                                Image(systemName: "magnifyingglass")
-                                    .scaledFont(size: 12, weight: .medium)
+                                RemixImage(.searchLine, scaledSize: 14)
                                     .foregroundStyle(taskTextColor.opacity(0.50))
                                 Text("Ask Notsky AI...")
                                     .scaledFont(size: 11.5)
                                     .foregroundStyle(taskTextColor.opacity(0.40))
                                 Spacer()
-                                Image(systemName: "arrow.up.circle.fill")
-                                    .scaledFont(size: 18)
+                                RemixImage(.arrowUpCircleFill, scaledSize: 20.5)
                                     .foregroundStyle(Color.red)
                             }
                             .padding(.horizontal, 12)
@@ -589,8 +567,7 @@ public struct CardExportSnapshotView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10.5, style: .continuous))
                             .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     } else {
-                        Image(systemName: "sparkles")
-                            .scaledFont(size: 26, weight: .bold)
+                        RemixImage(.sparklingLine, scaledSize: 30)
                             .foregroundStyle(Color.red)
                             .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     }
