@@ -114,7 +114,7 @@ public struct CardExportSnapshotView: View {
                         // Notsky AI Title & Status Capsules
                         HStack(spacing: 8) {
                             HStack(spacing: 6) {
-                                RemixImage(.sparklingLine, scaledSize: 12.5)
+                                RemixImage(.aiMark, scaledSize: 12.5)
                                     .foregroundStyle(Color.red)
                                 Text("AI")
                                     .scaledFont(size: 13, weight: .semibold, design: .default)
@@ -367,7 +367,7 @@ public struct CardExportSnapshotView: View {
 
                                 // AI Assistant Synthesis
                                 HStack(alignment: .top, spacing: 6) {
-                                    RemixImage(.sparklingLine, scaledSize: 12.5)
+                                    RemixImage(.aiMark, scaledSize: 12.5)
                                         .foregroundStyle(Color.red)
                                         .padding(.top, 2)
                                     Text("Extracted liquid glass tokens and verified 1024×1024 Retina icon layers.")
@@ -567,7 +567,7 @@ public struct CardExportSnapshotView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10.5, style: .continuous))
                             .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     } else {
-                        RemixImage(.sparklingLine, scaledSize: 30)
+                        RemixImage(.aiMark, scaledSize: 30)
                             .foregroundStyle(Color.red)
                             .shadow(color: Color.black.opacity(0.40), radius: 6, x: 0, y: 2.5)
                     }

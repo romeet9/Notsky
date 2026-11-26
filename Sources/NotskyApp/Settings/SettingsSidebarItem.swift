@@ -47,7 +47,7 @@ public enum SettingsSidebarItem: String, CaseIterable, Identifiable {
         case .widgets: return .layoutGridLine
         case .folders: return .folderFill
         case .appearance: return .paletteLine
-        case .ai: return .sparklingLine
+        case .ai: return .aiMark
         case .linear: return .listCheck
         case .voice: return .voiceprintLine
         case .focusTimer: return .timerLine

@@ -9,6 +9,8 @@ enum RemixIcon: String {
     case folderFill = "\u{ed61}"
     case folderLine = "\u{ed6a}"
     case sparklingLine = "\u{f36d}"
+    /// Not a Remix glyph: the Weft mark drawn as a vector (see WeftMark.swift). Used for Notsky AI.
+    case aiMark = "\u{E000}"
     case deleteBinLine = "\u{ec2a}"
     case refreshLine = "\u{f064}"
     case imageLine = "\u{ee4b}"
@@ -126,9 +128,15 @@ struct RemixImage: View {
     var body: some View {
         // Reading the observable singleton re-renders when the text-size slider moves.
         let points = scaled ? size * AppSettings.shared.textScale : size
-        let glyph = Text(icon.glyph)
-            .font(.custom(RemixIcon.fontName, fixedSize: points))
-            .frame(width: points, height: points)
+        let glyph = Group {
+            if icon == .aiMark {
+                // Remix glyphs sit inside a ~2/24 padding; match that optical size.
+                WeftMarkShape().padding(points * 0.1)
+            } else {
+                Text(icon.glyph).font(.custom(RemixIcon.fontName, fixedSize: points))
+            }
+        }
+        .frame(width: points, height: points)
         if let accessibilityLabel {
             glyph.accessibilityLabel(accessibilityLabel)
         } else {
@@ -140,6 +148,7 @@ struct RemixImage: View {
 extension NSImage {
     /// Draws a Remix glyph into a template image (menus, status items, alerts, drag images).
     static func remix(_ icon: RemixIcon, size: CGFloat, color: NSColor = .black) -> NSImage {
+        if icon == .aiMark { return weftMark(size: size, inset: 0.2, color: color) }
         RemixIcon.registerFont()
         let font = NSFont(name: RemixIcon.fontName, size: size) ?? NSFont.systemFont(ofSize: size)
         let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]

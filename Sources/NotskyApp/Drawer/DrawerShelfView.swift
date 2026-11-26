@@ -305,7 +305,7 @@ public struct DrawerShelfView: View {
                     manager.spawnNewFinderWidget()
                 }) {
                     HStack(spacing: 5) {
-                        RemixImage(.sparklingLine, scaledSize: 12.5)
+                        RemixImage(.aiMark, scaledSize: 12.5)
                         Text("Add AI Finder")
                             .scaledFont(size: 13, weight: .medium)
                     }

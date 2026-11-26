@@ -11,7 +11,7 @@ struct FinderEmptyState: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                RemixImage(.sparklingLine, scaledSize: 18.5)
+                RemixImage(.aiMark, scaledSize: 18.5)
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
                 Text("Notsky AI")
@@ -53,7 +53,7 @@ struct FinderNotConnectedState: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                RemixImage(.sparklingLine, scaledSize: 18.5)
+                RemixImage(.aiMark, scaledSize: 18.5)
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
                 Text("Notsky AI")

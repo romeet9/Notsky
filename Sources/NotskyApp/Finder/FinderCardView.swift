@@ -147,7 +147,7 @@ public struct FinderCardView: View {
         HStack(spacing: 8) {
             // Notsky AI title capsule
             HStack(spacing: 6) {
-                RemixImage(.sparklingLine, scaledSize: 12.5)
+                RemixImage(.aiMark, scaledSize: 12.5)
                     .foregroundStyle(.red)
                 
                 Text("AI")
@@ -333,7 +333,7 @@ public struct FinderCardView: View {
         HStack(spacing: 6) {
             // macOS Spotlight Style Input Bar
             HStack(spacing: 6) {
-                RemixImage(.sparklingLine, scaledSize: 15)
+                RemixImage(.aiMark, scaledSize: 15)
                     .foregroundStyle(isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.5))
                     .padding(.top, 9)
                 
