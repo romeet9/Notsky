@@ -21,6 +21,8 @@ public final class VoiceOpenService {
     /// Confirmation line shown under the orb after a command succeeds.
     public private(set) var confirmation: String?
     public private(set) var canUndo = false
+    /// Destructive steps Notsky AI proposed that wait for Confirm / Cancel on the card.
+    public private(set) var pendingConfirmations: [ChatConfirmation] = []
     /// True once a music command ran: keeps the Now Playing service alive without a Now Playing card.
     public private(set) var musicRequested = false
     public private(set) var failureMessage: String?
@@ -213,6 +215,7 @@ public final class VoiceOpenService {
         confirmation = nil
         undoAction = nil
         canUndo = false
+        pendingConfirmations = []
         failureMessage = nil
         transcript = ""
         level = 0
@@ -329,6 +332,15 @@ public final class VoiceOpenService {
     // MARK: - Resolve & run
 
     private func resolve(_ text: String, session current: Int) async {
+        // With a Groq key the transcript goes to Notsky AI; if that fails before anything ran, the deterministic parser below takes over.
+        if GroqAccount.shared.hasKey {
+            let outcome = await NotskyAgent.shared.run(text, history: [], style: .voice)
+            guard session == current, phase == .thinking else { return }
+            if !outcome.failedBeforeAnyAction {
+                present(outcome)
+                return
+            }
+        }
         let command = VoiceCommand.parse(text)
         do {
             let done = try await VoiceActions.run(command)
@@ -347,6 +359,57 @@ public final class VoiceOpenService {
             guard session == current, phase == .thinking else { return }
             fail(VoiceCommand.hint, after: 4.5)
         }
+    }
+
+    private func present(_ outcome: AgentOutcome) {
+        let agent = NotskyAgent.shared
+        let undoable = outcome.actions.map(\.id).filter { agent.canUndo($0) }
+        confirmation = outcome.reply
+        pendingConfirmations = outcome.confirmations
+        if undoable.isEmpty {
+            undoAction = nil
+        } else {
+            let ids = Array(undoable.reversed())
+            undoAction = { @MainActor in
+                for id in ids { _ = agent.undo(id) }
+            }
+        }
+        canUndo = !undoable.isEmpty
+        failureMessage = nil
+        phase = .done
+        SensoryFeedback.buttonClicked()
+        scheduleReset(after: pendingConfirmations.isEmpty ? (canUndo ? 6 : 3.5) : 25)
+    }
+
+    /// Runs the first waiting destructive step after the user taps Confirm on the card.
+    public func confirmPending() {
+        guard phase == .done, !pendingConfirmations.isEmpty else { return }
+        let step = pendingConfirmations.removeFirst()
+        let current = session
+        cancelReset()
+        Task {
+            let result = await NotskyAgent.shared.confirm(step)
+            guard session == current, phase == .done else { return }
+            confirmation = result.message
+            if let action = result.action, NotskyAgent.shared.canUndo(action.id) {
+                undoAction = { NotskyAgent.shared.undo(action.id) }
+                canUndo = true
+            } else {
+                undoAction = nil
+                canUndo = false
+            }
+            SensoryFeedback.buttonClicked()
+            scheduleReset(after: pendingConfirmations.isEmpty ? (canUndo ? 6 : 3) : 25)
+        }
+    }
+
+    public func cancelPending() {
+        guard phase == .done, !pendingConfirmations.isEmpty else { return }
+        pendingConfirmations.removeAll()
+        confirmation = String(localized: "Cancelled")
+        undoAction = nil
+        canUndo = false
+        scheduleReset(after: 1.6)
     }
 
     /// Reverses the last task, note or new-widget command while the confirmation is showing.
@@ -407,6 +470,7 @@ public final class VoiceOpenService {
         confirmation = nil
         undoAction = nil
         canUndo = false
+        pendingConfirmations = []
         failureMessage = nil
         permissionIssue = nil
         level = 0

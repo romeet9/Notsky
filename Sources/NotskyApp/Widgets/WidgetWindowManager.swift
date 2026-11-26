@@ -468,16 +468,17 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    public func spawnNewFinderWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewFinderWidget(near origin: CGPoint? = nil) -> UUID {
         let cardWidth: Double = 360.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .finder,
-                title: "Finder AI",
+                title: "Notsky AI",
                 noteContent: "",
                 headerImagePath: nextWallpaper,
                 items: [],
@@ -492,12 +493,13 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    public func spawnNewFoldersWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewFoldersWidget(near origin: CGPoint? = nil) -> UUID {
         let cardWidth: Double = 360.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .folders,
@@ -517,12 +519,13 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    public func spawnNewNowPlayingWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewNowPlayingWidget(near origin: CGPoint? = nil) -> UUID {
         let cardWidth: Double = 281.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .nowPlaying,
@@ -542,12 +545,13 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    public func spawnNewLinearWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewLinearWidget(near origin: CGPoint? = nil) -> UUID {
         let cardWidth: Double = 586.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .linear,
@@ -567,12 +571,13 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    public func spawnNewVoiceOpenWidget(near origin: CGPoint? = nil) {
+    @discardableResult
+    public func spawnNewVoiceOpenWidget(near origin: CGPoint? = nil) -> UUID {
         let cardWidth: Double = 281.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
-        placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
+        return placeAndOpen(width: cardWidth, height: cardHeight) { id, slot, origin, screenID in
             NoteCard(
                 id: id,
                 cardType: .voiceOpen,
@@ -748,7 +753,7 @@ public final class WidgetWindowManager: NSObject {
         let card4 = NoteCard(
             id: UUID(),
             cardType: .finder,
-            title: "notskyai",
+            title: "Notsky AI",
             noteContent: "",
             headerImagePath: w3,
             items: [],
@@ -836,17 +841,7 @@ public final class WidgetWindowManager: NSObject {
                 store.notes[2].activePageIndex = 0
             }
             if store.notes.indices.contains(3) {
-                let home = FileManager.default.homeDirectoryForCurrentUser.path
-                let sampleFiles = [
-                    FinderFileItem(name: "Q3_Product_Roadmap.pdf", path: "\(home)/Documents/Q3_Product_Roadmap.pdf", fileSize: "2.4 MB", fileType: "PDF Document", summary: "Contains spatial physics engine deliverables & Q3 milestones", formattedDate: "Today, 2:15 PM"),
-                    FinderFileItem(name: "Design_System_Tokens.pdf", path: "\(home)/Documents/Design_System_Tokens.pdf", fileSize: "5.1 MB", fileType: "PDF Document", summary: "Mac OS optical depth, continuous corner radius & materials spec", formattedDate: "Yesterday"),
-                    FinderFileItem(name: "Notsky_Release_Notes.md", path: "\(home)/Documents/Notsky_Release_Notes.md", fileSize: "14 KB", fileType: "Markdown", summary: "v1.0.0 production release changelog and installer build steps", formattedDate: "Sep 20, 2026")
-                ]
-                store.notes[3].title = "notskyai"
-                store.notes[3].chatMessages = [
-                    ChatMessage(role: "user", content: "Find recent architectural specs and roadmap PDFs"),
-                    ChatMessage(role: "assistant", content: "I indexed your local documents and located 3 relevant design and engineering files:", attachedFiles: sampleFiles)
-                ]
+                store.notes[3].title = "Notsky AI"
             }
         }
         

@@ -146,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         let card5 = NoteCard(
             cardType: .finder,
-            title: "notskyai",
+            title: "Notsky AI",
             headerImagePath: w1,
             items: [],
             width: 360,

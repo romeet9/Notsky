@@ -12,21 +12,25 @@ public struct FinderCardView: View {
     private var settings: AppSettings { AppSettings.shared }
     
     @State private var inputText: String = ""
-    @State private var isSearching: Bool = false
+    @State private var isWorking: Bool = false
     @State private var isHoveringPlus: Bool = false
     @State private var isHoveringTools: Bool = false
     @State private var isHoveringOpenFinder: Bool = false
-    @State private var showSettingsPopover: Bool = false
-    @State private var apiKeyInput: String = ""
     
+    private var account: GroqAccount { GroqAccount.shared }
+    private var isConnected: Bool { account.hasKey }
+    private let maxStoredMessages = 50
     
-    // Quick suggestion queries
-    private let quickSuggestions = [
-        "Find resume PDF",
-        "Recent spreadsheets",
-        "Recent downloads",
-        "Design assets"
-    ]
+    // Quick suggestion prompts
+    private var quickSuggestions: [String] {
+        var list = [
+            String(localized: "What's on my desktop?"),
+            String(localized: "Add a task to buy milk"),
+            String(localized: "Pin my notes card")
+        ]
+        if account.searchFilesEnabled { list.insert(String(localized: "Find my resume PDF"), at: 0) }
+        return list
+    }
     
     // MARK: - Layout Constants Matching Notsky Spec
     private var cardWidth: CGFloat { CGFloat(note.width) }
@@ -141,13 +145,13 @@ public struct FinderCardView: View {
     // MARK: - Header Capsules
     private var headerTitleCapsules: some View {
         HStack(spacing: 8) {
-            // notskyai Title Capsule
+            // Notsky AI title capsule
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
                     .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(.red)
                 
-                Text("notskyai")
+                Text("AI")
                     .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(isDark ? .white : .black)
             }
@@ -160,10 +164,10 @@ public struct FinderCardView: View {
             // Status Capsule (Live AI Ping/Ready Indicator)
             HStack(spacing: 5) {
                 Circle()
-                    .fill(isSearching ? Color.orange : Color.green)
+                    .fill(isWorking ? Color.orange : (isConnected ? Color.green : Color.gray))
                     .frame(width: 7, height: 7)
                 
-                Text(isSearching ? LocalizedStringKey("thinking") : LocalizedStringKey("ready"))
+                Text(isWorking ? LocalizedStringKey("thinking") : (isConnected ? LocalizedStringKey("ready") : LocalizedStringKey("not connected")))
                     .scaledFont(size: 12, weight: .medium, design: .rounded)
                     .foregroundStyle(isDark ? .white.opacity(0.9) : .black.opacity(0.8))
             }
@@ -184,10 +188,11 @@ public struct FinderCardView: View {
                 SensoryFeedback.buttonClicked()
                 withMotion(.spring(response: 0.25, dampingFraction: 0.8)) {
                     note.chatMessages.removeAll()
+                    isWorking = false
                 }
             }) {
-                Image(systemName: "plus")
-                    .accessibilityLabel("Add")
+                Image(systemName: "square.and.pencil")
+                    .accessibilityLabel("Clear chat")
                     .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(isDark ? .white.opacity(0.9) : .black.opacity(0.75))
                     .frame(width: 36, height: 36)
@@ -196,52 +201,24 @@ public struct FinderCardView: View {
             }
             .buttonStyle(.plain)
             .onHover { isHoveringPlus = $0 }
-            .help("Start New notskyai Chat")
+            .help("Clear chat")
             
             Spacer()
             
             // 4-Icon Action Cluster Pill
             HStack(spacing: 11) {
-                // 1. API Key & Model Settings
+                // 1. Groq key & model settings
                 Button(action: {
                     SensoryFeedback.buttonClicked()
-                    apiKeyInput = AIFinderService.shared.apiKey
-                    showSettingsPopover.toggle()
+                    SettingsWindowManager.shared.showSettings(item: .ai)
                 }) {
                     Image(systemName: "key.fill")
                         .scaledFont(size: 12.5, weight: .medium)
-                        .foregroundStyle(AIFinderService.shared.apiKey.isEmpty ? (isDark ? .white.opacity(0.5) : .black.opacity(0.4)) : Color.green)
+                        .foregroundStyle(isConnected ? Color.green : (isDark ? .white.opacity(0.5) : .black.opacity(0.4)))
                 }
                 .buttonStyle(.plain)
-                .popover(isPresented: $showSettingsPopover) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("notskyai Cloud Configuration")
-                            .scaledFont(size: 12, weight: .bold)
-                        
-                        Text("Active Free Model: \(AIFinderService.defaultFreeModel)")
-                            .scaledFont(size: 11)
-                            .foregroundStyle(.secondary)
-                        
-                        SecureField("OpenRouter API Key (Optional)", text: $apiKeyInput)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 260)
-                        
-                        HStack {
-                            Button("Save") {
-                                AIFinderService.shared.apiKey = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-                                showSettingsPopover = false
-                            }
-                            .buttonStyle(.borderedProminent)
-                            
-                            Button("Clear") {
-                                AIFinderService.shared.apiKey = ""
-                                apiKeyInput = ""
-                            }
-                        }
-                    }
-                    .padding(14)
-                }
                 .help("AI Settings")
+                .accessibilityLabel("AI Settings")
                 
                 // 2. Pin Button (Pin on Top / Floating)
                 Button(action: {
@@ -309,7 +286,9 @@ public struct FinderCardView: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 14) {
-                    if note.chatMessages.isEmpty {
+                    if !isConnected && note.chatMessages.isEmpty {
+                        FinderNotConnectedState(isDark: isDark, specularBorderGradient: specularBorderGradient)
+                    } else if note.chatMessages.isEmpty {
                         FinderEmptyState(
                             isDark: isDark,
                             specularBorderGradient: specularBorderGradient,
@@ -321,21 +300,26 @@ public struct FinderCardView: View {
                         )
                     } else {
                         ForEach(note.chatMessages) { message in
-                            FinderChatMessageRow(msg: message, cardWidth: cardWidth, isDark: isDark, sheetBackgroundColor: sheetBackgroundColor, specularBorderGradient: specularBorderGradient)
+                            FinderChatMessageRow(
+                                msg: message,
+                                cardWidth: cardWidth,
+                                isDark: isDark,
+                                sheetBackgroundColor: sheetBackgroundColor,
+                                specularBorderGradient: specularBorderGradient,
+                                onResolve: { confirmationID, approve in
+                                    resolveConfirmation(messageID: message.id, confirmationID: confirmationID, approve: approve)
+                                }
+                            )
                         }
                     }
                     
-                    if isSearching {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("Searching local storage & reasoning with notskyai...")
-                                .scaledFont(size: 13, weight: .regular)
-                                .foregroundStyle(isDark ? Color(white: 0.65) : Color(white: 0.45))
-                        }
-                        .padding(.vertical, 4)
-                        .id("searching_indicator")
+                    if isWorking {
+                        FinderTypingIndicator(isDark: isDark)
+                            .padding(.vertical, 4)
+                            .id("typing_indicator")
                     }
+                    
+                    Color.clear.frame(height: 1).id("chat_bottom")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 8)
@@ -344,37 +328,39 @@ public struct FinderCardView: View {
             .scrollIndicators(.hidden)
             .contentEdgeFade(top: 22, bottom: 44)
             .onChange(of: note.chatMessages.count) {
-                if let lastId = note.chatMessages.last?.id {
-                    withMotion {
-                        proxy.scrollTo(lastId, anchor: .bottom)
-                    }
-                }
+                withMotion { proxy.scrollTo("chat_bottom", anchor: .bottom) }
+            }
+            .onChange(of: isWorking) {
+                withMotion { proxy.scrollTo("chat_bottom", anchor: .bottom) }
             }
         }
     }
-    
-    // MARK: - Empty State Intro & Quick Suggestions
-    
-    // MARK: - Chat Message Row
-    
-    // MARK: - Square Document Card
-    
-    
     
     // MARK: - Bottom Floating Bar with Input Bar & Open Finder Button
     private var bottomFloatingBar: some View {
         HStack(spacing: 6) {
             // macOS Spotlight Style Input Bar
             HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: "sparkles")
                     .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.5))
+                    .padding(.top, 9)
                 
-                TextField("Ask notskyai or search...", text: $inputText)
+                TextField("Ask Notsky AI...", text: $inputText, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .scaledFont(size: 12.5, weight: .regular)
-                    .onSubmit {
+                    .lineLimit(1...4)
+                    .scaledFont(size: 15, weight: .regular)
+                    .padding(.vertical, 7)
+                    .disabled(!isConnected)
+                    .accessibilityLabel("Message Notsky AI")
+                    .onSubmit { sendMessage() }
+                    .onKeyPress(.return, phases: .down) { press in
+                        if press.modifiers.contains(.shift) {
+                            inputText += "\n"
+                            return .handled
+                        }
                         sendMessage()
+                        return .handled
                     }
                 
                 if !inputText.isEmpty {
@@ -385,10 +371,12 @@ public struct FinderCardView: View {
                             .foregroundStyle(isDark ? .white : .black)
                     }
                     .buttonStyle(.plain)
+                    .padding(.top, 7)
+                    .disabled(isWorking)
                 }
             }
             .padding(.horizontal, 10)
-            .frame(height: 36)
+            .frame(minHeight: 36)
             .background(
                 isDark ? Color(white: 0.16).opacity(0.88) : Color.white.opacity(0.88),
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -473,40 +461,58 @@ public struct FinderCardView: View {
     // MARK: - Message Execution
     private func sendMessage() {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty, isConnected, !isWorking else { return }
         
         SensoryFeedback.buttonClicked()
         inputText = ""
         
-        let userMsg = ChatMessage(role: "user", content: trimmed)
-        note.chatMessages.append(userMsg)
-        isSearching = true
+        let history = note.chatMessages
+        note.chatMessages.append(ChatMessage(role: "user", content: trimmed))
+        note.chatMessages.capChatHistory(maxStoredMessages)
+        isWorking = true
         
         Task {
-            // 1. Search local files matching query (natural language date/month parsing is built into the search service)
-            let matchedFiles = await AIFinderService.shared.searchLocalFiles(matching: trimmed, maxResults: 5)
-            
-            // 2. Query notskyai Cloud AI with context
-            do {
-                let aiResponse = try await AIFinderService.shared.queryCloudAI(
-                    userPrompt: trimmed,
-                    relevantFiles: matchedFiles,
-                    chatHistory: note.chatMessages
-                )
-                
-                await MainActor.run {
-                    let assistantMsg = ChatMessage(role: "assistant", content: aiResponse, attachedFiles: matchedFiles)
-                    note.chatMessages.append(assistantMsg)
-                    isSearching = false
-                    SensoryFeedback.timerFinished()
+            let outcome = await NotskyAgent.shared.run(trimmed, history: history, style: .chat)
+            let reply = ChatMessage(
+                role: "assistant",
+                content: outcome.reply,
+                attachedFiles: outcome.files,
+                actions: outcome.actions.isEmpty ? nil : outcome.actions,
+                confirmations: outcome.confirmations.isEmpty ? nil : outcome.confirmations,
+                isError: outcome.error != nil && outcome.actions.isEmpty ? true : nil
+            )
+            note.chatMessages.append(reply)
+            note.chatMessages.capChatHistory(maxStoredMessages)
+            isWorking = false
+            SensoryFeedback.timerFinished()
+        }
+    }
+    
+    /// Runs or cancels a destructive step the assistant asked about. Nothing executes until the user taps.
+    private func resolveConfirmation(messageID: UUID, confirmationID: UUID, approve: Bool) {
+        guard let mi = note.chatMessages.firstIndex(where: { $0.id == messageID }),
+              let ci = note.chatMessages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }),
+              let confirmation = note.chatMessages[mi].confirmations?[ci],
+              confirmation.status == .pending else { return }
+        
+        guard approve else {
+            note.chatMessages[mi].confirmations?[ci].status = .cancelled
+            return
+        }
+        note.chatMessages[mi].confirmations?[ci].status = .confirmed
+        Task {
+            let result = await NotskyAgent.shared.confirm(confirmation)
+            guard let mi = note.chatMessages.firstIndex(where: { $0.id == messageID }) else { return }
+            if result.succeeded, let action = result.action {
+                var actions = note.chatMessages[mi].actions ?? []
+                actions.append(action)
+                note.chatMessages[mi].actions = actions
+            } else if !result.succeeded {
+                if let ci = note.chatMessages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }) {
+                    note.chatMessages[mi].confirmations?[ci].status = .cancelled
                 }
-            } catch {
-                await MainActor.run {
-                    let fallback = AIFinderService.shared.generateLocalFallbackResponse(query: trimmed, files: matchedFiles)
-                    let assistantMsg = ChatMessage(role: "assistant", content: fallback, attachedFiles: matchedFiles)
-                    note.chatMessages.append(assistantMsg)
-                    isSearching = false
-                }
+                note.chatMessages.append(ChatMessage(role: "assistant", content: result.message, isError: true))
+                note.chatMessages.capChatHistory(maxStoredMessages)
             }
         }
     }

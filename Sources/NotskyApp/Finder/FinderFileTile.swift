@@ -12,7 +12,12 @@ struct FinderFileTile: View {
         Button(action: {
             SensoryFeedback.buttonClicked()
             let url = URL(fileURLWithPath: file.path)
-            NSWorkspace.shared.open(url)
+            // Option-click reveals in Finder; apps and scripts are always revealed, never launched from here.
+            if NSEvent.modifierFlags.contains(.option) || !FileSearch.isSafeToOpen(url) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } else {
+                NSWorkspace.shared.open(url)
+            }
         }) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
@@ -72,11 +77,12 @@ struct FinderFileTile: View {
                 NSPasteboard.general.setString(file.path, forType: .string)
             }
         }
-        .help("Click to open \(file.name)")
+        .help("Click to open \(file.name). Option-click to reveal in Finder.")
     }
 
     private func fileIconName(for ext: String) -> String {
         switch ext.lowercased() {
+        case "folder": return "folder.fill"
         case "pdf": return "doc.text.fill"
         case "xlsx", "xls", "csv", "numbers": return "tablecells.fill"
         case "docx", "doc", "pages", "txt", "rtf": return "doc.fill"
@@ -88,6 +94,7 @@ struct FinderFileTile: View {
 
     private func fileBadgeColor(for ext: String) -> Color {
         switch ext.lowercased() {
+        case "folder": return Color(white: 0.70)
         case "pdf": return Color.red.opacity(0.85)
         case "xlsx", "xls", "csv", "numbers": return Color(white: 0.75)
         case "docx", "doc", "pages": return Color(white: 0.70)

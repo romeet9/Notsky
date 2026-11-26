@@ -237,7 +237,7 @@ public final class NoteStore {
         
         let card4 = NoteCard(
             cardType: .finder,
-            title: "notskyai",
+            title: "Notsky AI",
             noteContent: "",
             headerImagePath: w3,
             items: [],
@@ -354,7 +354,7 @@ public final class NoteStore {
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         let newCard = NoteCard(
             cardType: .finder,
-            title: "Finder AI",
+            title: "Notsky AI",
             noteContent: "",
             headerImagePath: nextWallpaper,
             items: [],

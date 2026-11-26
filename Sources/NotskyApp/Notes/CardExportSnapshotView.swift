@@ -111,13 +111,13 @@ public struct CardExportSnapshotView: View {
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
                     if isFinderType {
-                        // notskyai Title & Status Capsules
+                        // Notsky AI Title & Status Capsules
                         HStack(spacing: 8) {
                             HStack(spacing: 6) {
                                 Image(systemName: "sparkles")
                                     .scaledFont(size: 11, weight: .semibold)
                                     .foregroundStyle(Color.red)
-                                Text("notskyai")
+                                Text("AI")
                                     .scaledFont(size: 13, weight: .semibold, design: .default)
                                     .foregroundStyle(taskTextColor)
                             }
@@ -515,7 +515,7 @@ public struct CardExportSnapshotView: View {
                                 Image(systemName: "magnifyingglass")
                                     .scaledFont(size: 12, weight: .medium)
                                     .foregroundStyle(taskTextColor.opacity(0.50))
-                                Text("Ask notskyai or search files...")
+                                Text("Ask Notsky AI...")
                                     .scaledFont(size: 11.5)
                                     .foregroundStyle(taskTextColor.opacity(0.40))
                                 Spacer()

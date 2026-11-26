@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Secure Keychain wrapper for storing sensitive user credentials (e.g. OpenRouter API Keys)
+/// Secure Keychain wrapper for storing sensitive user credentials (e.g. the Groq and Linear API keys)
 public final class KeychainHelper {
     public static let shared = KeychainHelper()
     private let service = "com.romeet.notsky.next"

@@ -16,6 +16,7 @@ public struct SettingsDetailView: View {
             case .widgets: WidgetsSettingsForm()
             case .folders: FoldersSettingsForm()
             case .appearance: AppearanceSettingsForm()
+            case .ai: AISettingsForm()
             case .linear: LinearSettingsForm()
             case .voice: VoiceSettingsForm()
             case .focusTimer: FocusTimerSettingsForm()

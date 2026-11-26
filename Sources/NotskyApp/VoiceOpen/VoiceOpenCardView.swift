@@ -224,6 +224,37 @@ public struct VoiceOpenCardView: View {
     private var statusLine: some View {
         Group {
             switch service.phase {
+            case .done where !service.pendingConfirmations.isEmpty:
+                VStack(spacing: 8) {
+                    Text(service.pendingConfirmations[0].prompt)
+                        .foregroundStyle(primaryText.opacity(0.9))
+                        .lineLimit(2)
+                    HStack(spacing: 8) {
+                        Button {
+                            service.cancelPending()
+                        } label: {
+                            Text("Cancel")
+                                .padding(.horizontal, 14)
+                                .frame(height: 30)
+                                .background(sheetBackgroundColor, in: Capsule())
+                                .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
+                                .foregroundStyle(primaryText)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Cancel")
+                        Button {
+                            service.confirmPending()
+                        } label: {
+                            Text("Confirm")
+                                .padding(.horizontal, 14)
+                                .frame(height: 30)
+                                .background(Color.red.opacity(0.85), in: Capsule())
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Confirm")
+                    }
+                }
             case .done:
                 HStack(spacing: 8) {
                     Text(service.confirmation ?? "")
@@ -252,13 +283,18 @@ public struct VoiceOpenCardView: View {
                 Text("Working on it…")
                     .foregroundStyle(secondaryText)
             default:
-                Text("Hold \(hotKey) · Add a task, a note, or control music")
-                    .foregroundStyle(secondaryText)
+                if GroqAccount.shared.hasKey {
+                    Text("Hold \(hotKey) · Ask Notsky AI anything")
+                        .foregroundStyle(secondaryText)
+                } else {
+                    Text("Hold \(hotKey) · Add a task, a note, or control music")
+                        .foregroundStyle(secondaryText)
+                }
             }
         }
         .scaledFont(size: 12, weight: .medium)
         .multilineTextAlignment(.center)
-        .lineLimit(2)
+        .lineLimit(3)
         .frame(maxWidth: .infinity, minHeight: 18)
         .motionTransition(.opacity)
     }
