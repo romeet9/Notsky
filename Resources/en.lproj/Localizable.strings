@@ -502,3 +502,4 @@
 "Notsky AI powers the AI card and the Voice card. It can add, edit, pin and delete cards, tasks and notes, control music and find files. Deleting anything asks you to confirm first. Your key is stored in the macOS Keychain and sent only to api.groq.com, together with your messages and a short summary of your cards." = "Notsky AI powers the AI card and the Voice card. It can add, edit, pin and delete cards, tasks and notes, control music and find files. Deleting anything asks you to confirm first. Your key is stored in the macOS Keychain and sent only to api.groq.com, together with your messages and a short summary of your cards.";
 "Confirm" = "Confirm";
 "Hold %@ · Ask Notsky AI anything" = "Hold %@ · Ask Notsky AI anything";
+"New Notsky AI Card" = "New Notsky AI Card";

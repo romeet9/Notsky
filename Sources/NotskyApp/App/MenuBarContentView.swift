@@ -30,6 +30,11 @@ struct MenuBarContentView: View {
         }
         .keyboardShortcut("l", modifiers: [.command, .option])
 
+        Button("New Notsky AI Card") {
+            manager.spawnNewFinderWidget()
+        }
+        .keyboardShortcut("a", modifiers: [.command, .option])
+
         Button("New Voice Card") {
             manager.spawnNewVoiceOpenWidget()
         }

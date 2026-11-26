@@ -22,6 +22,7 @@ public struct SettingsSidebarView: View {
             }
             
             Section("Features") {
+                sidebarRow(for: .ai)
                 sidebarRow(for: .linear)
                 sidebarRow(for: .voice)
                 sidebarRow(for: .focusTimer)
