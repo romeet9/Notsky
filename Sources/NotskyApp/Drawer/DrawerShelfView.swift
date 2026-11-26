@@ -199,7 +199,9 @@ public struct DrawerShelfView: View {
     @ViewBuilder
     private var cardsHorizontalScrollView: some View {
         ScrollView(.horizontal) {
-            LazyHStack(alignment: .bottom, spacing: 24) {
+            // Eager on purpose: a shelf holds a handful of heavy cards, and a lazy stack would build
+            // (and tear down) each one mid-scroll, which is what makes scrolling hitch.
+            HStack(alignment: .bottom, spacing: 24) {
                 ForEach($manager.store.notes) { $note in
                     VStack(spacing: 0) {
                         if note.cardType == .finder {
