@@ -49,6 +49,8 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
     public var actions: [ChatAction]?
     public var confirmations: [ChatConfirmation]?
     public var isError: Bool?
+    /// True when the user spoke this message through the Voice card.
+    public var spoken: Bool?
 
     public init(
         id: UUID = UUID(),
@@ -58,7 +60,8 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
         attachedFiles: [FinderFileItem] = [],
         actions: [ChatAction]? = nil,
         confirmations: [ChatConfirmation]? = nil,
-        isError: Bool? = nil
+        isError: Bool? = nil,
+        spoken: Bool? = nil
     ) {
         self.id = id
         self.role = role
@@ -68,6 +71,7 @@ public struct ChatMessage: Identifiable, Codable, Equatable {
         self.actions = actions
         self.confirmations = confirmations
         self.isError = isError
+        self.spoken = spoken
     }
 }
 

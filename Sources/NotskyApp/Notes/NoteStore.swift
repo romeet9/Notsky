@@ -151,7 +151,9 @@ public final class NoteStore {
     public init() {
         if case .loaded(let persistedNotes, let persistedFolders) = Self.loadFromDisk() {
             // Pixel sizes are derived from grid spans at layout time (WidgetWindowManager).
-            let loadedNotes = persistedNotes
+            var loadedNotes = persistedNotes
+            // Chats start fresh on every launch.
+            for i in loadedNotes.indices { loadedNotes[i].chatMessages = [] }
             self.notes = loadedNotes
             self.folders = persistedFolders.isEmpty ? Self.defaultDemoFolders : persistedFolders
             saveToDisk()

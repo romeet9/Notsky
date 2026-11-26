@@ -17,6 +17,7 @@ public struct FinderCardView: View {
     @State private var isHoveringTools: Bool = false
     @State private var isHoveringOpenFinder: Bool = false
     
+    private var agent: NotskyAgent { NotskyAgent.shared }
     private var account: GroqAccount { GroqAccount.shared }
     private var isConnected: Bool { account.hasKey }
     private let maxStoredMessages = 50
@@ -24,11 +25,11 @@ public struct FinderCardView: View {
     // Quick suggestion prompts
     private var quickSuggestions: [String] {
         var list = [
-            String(localized: "What's on my desktop?"),
-            String(localized: "Add a task to buy milk"),
-            String(localized: "Pin my notes card")
+            String(localized: "Add milk to groceries"),
+            String(localized: "Pin the Linear card"),
+            String(localized: "Find my resume")
         ]
-        if account.searchFilesEnabled { list.insert(String(localized: "Find my resume PDF"), at: 0) }
+        if !account.searchFilesEnabled { list.removeLast() }
         return list
     }
     
@@ -186,7 +187,7 @@ public struct FinderCardView: View {
             Button(action: {
                 SensoryFeedback.buttonClicked()
                 withMotion(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    note.chatMessages.removeAll()
+                    agent.messages.removeAll()
                     isWorking = false
                 }
             }) {
@@ -277,10 +278,10 @@ public struct FinderCardView: View {
     private var chatScrollView: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 14) {
-                    if !isConnected && note.chatMessages.isEmpty {
+                VStack(alignment: .leading, spacing: 7) {
+                    if !isConnected && agent.messages.isEmpty {
                         FinderNotConnectedState(isDark: isDark, specularBorderGradient: specularBorderGradient)
-                    } else if note.chatMessages.isEmpty {
+                    } else if agent.messages.isEmpty {
                         FinderEmptyState(
                             isDark: isDark,
                             specularBorderGradient: specularBorderGradient,
@@ -291,24 +292,19 @@ public struct FinderCardView: View {
                             }
                         )
                     } else {
-                        ForEach(note.chatMessages) { message in
-                            FinderChatMessageRow(
-                                msg: message,
-                                cardWidth: cardWidth,
-                                isDark: isDark,
-                                sheetBackgroundColor: sheetBackgroundColor,
-                                specularBorderGradient: specularBorderGradient,
-                                onResolve: { confirmationID, approve in
-                                    resolveConfirmation(messageID: message.id, confirmationID: confirmationID, approve: approve)
-                                }
-                            )
+                        ForEach(Array(agent.messages.enumerated()), id: \.element.id) { index, message in
+                            chatRow(index: index, message: message)
                         }
                     }
                     
                     if isWorking {
-                        FinderTypingIndicator(isDark: isDark)
-                            .padding(.vertical, 4)
-                            .id("typing_indicator")
+                        HStack(spacing: 6) {
+                            Color.clear.frame(width: 18, height: 18)
+                            FinderTypingIndicator(isDark: isDark)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.top, 7)
+                        .id("typing_indicator")
                     }
                     
                     Color.clear.frame(height: 1).id("chat_bottom")
@@ -319,13 +315,31 @@ public struct FinderCardView: View {
             }
             .scrollIndicators(.hidden)
             .contentEdgeFade(top: 22, bottom: 44)
-            .onChange(of: note.chatMessages.count) {
+            .onChange(of: agent.messages.count) {
                 withMotion { proxy.scrollTo("chat_bottom", anchor: .bottom) }
             }
             .onChange(of: isWorking) {
                 withMotion { proxy.scrollTo("chat_bottom", anchor: .bottom) }
             }
         }
+    }
+    
+    @ViewBuilder
+    private func chatRow(index: Int, message: ChatMessage) -> some View {
+        let previousRole: String? = index > 0 ? agent.messages[index - 1].role : nil
+        let startsTurn = previousRole != nil && previousRole != message.role
+        FinderChatMessageRow(
+            msg: message,
+            cardWidth: cardWidth,
+            isDark: isDark,
+            sheetBackgroundColor: sheetBackgroundColor,
+            specularBorderGradient: specularBorderGradient,
+            onResolve: { confirmationID, approve in
+                resolveConfirmation(messageID: message.id, confirmationID: confirmationID, approve: approve)
+            },
+            showAvatar: previousRole == nil || previousRole == "user"
+        )
+        .padding(.top, startsTurn ? 7 : 0)
     }
     
     // MARK: - Bottom Floating Bar with Input Bar & Open Finder Button
@@ -454,23 +468,9 @@ public struct FinderCardView: View {
         SensoryFeedback.buttonClicked()
         inputText = ""
         
-        let history = note.chatMessages
-        note.chatMessages.append(ChatMessage(role: "user", content: trimmed))
-        note.chatMessages.capChatHistory(maxStoredMessages)
-        isWorking = true
-        
+        withMotion { isWorking = true }
         Task {
-            let outcome = await NotskyAgent.shared.run(trimmed, history: history, style: .chat)
-            let reply = ChatMessage(
-                role: "assistant",
-                content: outcome.reply,
-                attachedFiles: outcome.files,
-                actions: outcome.actions.isEmpty ? nil : outcome.actions,
-                confirmations: outcome.confirmations.isEmpty ? nil : outcome.confirmations,
-                isError: outcome.error != nil && outcome.actions.isEmpty ? true : nil
-            )
-            note.chatMessages.append(reply)
-            note.chatMessages.capChatHistory(maxStoredMessages)
+            await agent.converse(trimmed, style: .chat)
             isWorking = false
             SensoryFeedback.timerFinished()
         }
@@ -478,29 +478,29 @@ public struct FinderCardView: View {
     
     /// Runs or cancels a destructive step the assistant asked about. Nothing executes until the user taps.
     private func resolveConfirmation(messageID: UUID, confirmationID: UUID, approve: Bool) {
-        guard let mi = note.chatMessages.firstIndex(where: { $0.id == messageID }),
-              let ci = note.chatMessages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }),
-              let confirmation = note.chatMessages[mi].confirmations?[ci],
+        guard let mi = agent.messages.firstIndex(where: { $0.id == messageID }),
+              let ci = agent.messages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }),
+              let confirmation = agent.messages[mi].confirmations?[ci],
               confirmation.status == .pending else { return }
         
         guard approve else {
-            note.chatMessages[mi].confirmations?[ci].status = .cancelled
+            agent.messages[mi].confirmations?[ci].status = .cancelled
             return
         }
-        note.chatMessages[mi].confirmations?[ci].status = .confirmed
+        agent.messages[mi].confirmations?[ci].status = .confirmed
         Task {
             let result = await NotskyAgent.shared.confirm(confirmation)
-            guard let mi = note.chatMessages.firstIndex(where: { $0.id == messageID }) else { return }
+            guard let mi = agent.messages.firstIndex(where: { $0.id == messageID }) else { return }
             if result.succeeded, let action = result.action {
-                var actions = note.chatMessages[mi].actions ?? []
+                var actions = agent.messages[mi].actions ?? []
                 actions.append(action)
-                note.chatMessages[mi].actions = actions
+                agent.messages[mi].actions = actions
             } else if !result.succeeded {
-                if let ci = note.chatMessages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }) {
-                    note.chatMessages[mi].confirmations?[ci].status = .cancelled
+                if let ci = agent.messages[mi].confirmations?.firstIndex(where: { $0.id == confirmationID }) {
+                    agent.messages[mi].confirmations?[ci].status = .cancelled
                 }
-                note.chatMessages.append(ChatMessage(role: "assistant", content: result.message, isError: true))
-                note.chatMessages.capChatHistory(maxStoredMessages)
+                agent.messages.append(ChatMessage(role: "assistant", content: result.message, isError: true))
+                agent.messages.capChatHistory(maxStoredMessages)
             }
         }
     }

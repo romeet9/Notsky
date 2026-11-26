@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Intro copy and suggested prompts shown before the first Notsky AI message.
+/// Suggested prompt chips shown before the first Notsky AI message.
 struct FinderEmptyState: View {
     let isDark: Bool
     let specularBorderGradient: LinearGradient
@@ -9,36 +9,14 @@ struct FinderEmptyState: View {
     let onSelect: (String) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                RemixImage(.aiMark, scaledSize: 18.5)
-                    .foregroundStyle(.red)
-                    .accessibilityHidden(true)
-                Text("Notsky AI")
-                    .scaledFont(size: 15, weight: .semibold)
-                    .foregroundStyle(isDark ? .white : .black)
-            }
-            
-            Text("Ask me to find files, or to add, edit, pin and delete cards, tasks and notes on your desktop.")
-                .scaledFont(size: 13, weight: .regular)
-                .foregroundStyle(isDark ? .white.opacity(0.6) : .black.opacity(0.6))
-                .lineLimit(4)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Try asking:")
-                    .scaledFont(size: 12, weight: .semibold)
-                    .foregroundStyle(isDark ? .white.opacity(0.65) : .black.opacity(0.6))
-                
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    ForEach(suggestions, id: \.self) { suggestion in
-                        SuggestedSearchCapsuleButton(
-                            text: suggestion,
-                            isDark: isDark,
-                            specularBorderGradient: specularBorderGradient,
-                            action: { onSelect(suggestion) }
-                        )
-                    }
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(suggestions, id: \.self) { suggestion in
+                SuggestedSearchCapsuleButton(
+                    text: suggestion,
+                    isDark: isDark,
+                    specularBorderGradient: specularBorderGradient,
+                    action: { onSelect(suggestion) }
+                )
             }
         }
         .padding(.vertical, 12)

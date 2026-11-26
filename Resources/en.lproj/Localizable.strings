@@ -483,8 +483,9 @@
 "Connect a free Groq API key to let Notsky AI manage your cards and find files." = "Connect a free Groq API key to let Notsky AI manage your cards and find files.";
 "Add Groq key" = "Add Groq key";
 "What's on my desktop?" = "What's on my desktop?";
-"Add a task to buy milk" = "Add a task to buy milk";
-"Pin my notes card" = "Pin my notes card";
+"Add milk to groceries" = "Add milk to groceries";
+"Pin the Linear card" = "Pin the Linear card";
+"Find my resume" = "Find my resume";
 "Find my resume PDF" = "Find my resume PDF";
 "AI" = "AI";
 "not connected" = "not connected";
@@ -503,3 +504,4 @@
 "Confirm" = "Confirm";
 "Hold %@ · Ask Notsky AI anything" = "Hold %@ · Ask Notsky AI anything";
 "New Notsky AI Card" = "New Notsky AI Card";
+"Spoken" = "Spoken";

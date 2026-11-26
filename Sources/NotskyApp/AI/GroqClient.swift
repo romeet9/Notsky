@@ -142,7 +142,9 @@ enum GroqClient {
         var body: [String: Any] = [
             "model": model,
             "messages": messages.map(\.json),
-            "temperature": 0.3
+            "temperature": 0.3,
+            // Tool-call arguments (e.g. note text) need room; the reply itself stays short via the prompt.
+            "max_tokens": tools == nil ? 120 : 400
         ]
         if let tools, let parsed = try? JSONSerialization.jsonObject(with: tools) as? [[String: Any]], !parsed.isEmpty {
             body["tools"] = parsed

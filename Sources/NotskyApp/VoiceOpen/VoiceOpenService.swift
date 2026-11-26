@@ -334,7 +334,7 @@ public final class VoiceOpenService {
     private func resolve(_ text: String, session current: Int) async {
         // With a Groq key the transcript goes to Notsky AI; if that fails before anything ran, the deterministic parser below takes over.
         if GroqAccount.shared.hasKey {
-            let outcome = await NotskyAgent.shared.run(text, history: [], style: .voice)
+            let outcome = await NotskyAgent.shared.converse(text, style: .voice, spoken: true)
             guard session == current, phase == .thinking else { return }
             if !outcome.failedBeforeAnyAction {
                 present(outcome)
