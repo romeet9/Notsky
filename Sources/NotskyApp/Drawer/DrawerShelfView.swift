@@ -123,6 +123,29 @@ public struct DrawerShelfView: View {
         .preferredColorScheme(settings.preferredColorScheme)
     }
     
+    /// The shelf shows every card at its base (unstretched, unexpanded) size.
+    private func shelfBinding(_ binding: Binding<NoteCard>) -> Binding<NoteCard> {
+        func baseSize(_ n: NoteCard) -> CGSize {
+            let s = GridSnapManager.shared.spans(of: n)
+            return GridSnapManager.shared.baseCardSize(cSpan: s.c, rSpan: s.r)
+        }
+        return Binding(
+            get: {
+                var n = binding.wrappedValue
+                let size = baseSize(n)
+                n.width = Double(size.width)
+                n.height = Double(size.height)
+                return n
+            },
+            set: { newValue in
+                var n = newValue
+                n.width = binding.wrappedValue.width
+                n.height = binding.wrappedValue.height
+                binding.wrappedValue = n
+            }
+        )
+    }
+    
     // MARK: - Cards Horizontal Carousel
     
     @ViewBuilder
@@ -133,7 +156,7 @@ public struct DrawerShelfView: View {
                     VStack(spacing: 0) {
                         if note.cardType == .finder {
                             FinderCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewWidget(near: origin)
@@ -144,7 +167,7 @@ public struct DrawerShelfView: View {
                             )
                         } else if note.cardType == .folders {
                             FoldersCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewFoldersWidget(near: origin)
@@ -155,7 +178,7 @@ public struct DrawerShelfView: View {
                             )
                         } else if note.cardType == .nowPlaying {
                             NowPlayingCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewNowPlayingWidget(near: origin)
@@ -166,7 +189,7 @@ public struct DrawerShelfView: View {
                             )
                         } else if note.cardType == .linear {
                             LinearCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewLinearWidget(near: origin)
@@ -177,7 +200,7 @@ public struct DrawerShelfView: View {
                             )
                         } else if note.cardType == .voiceOpen {
                             VoiceOpenCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewVoiceOpenWidget(near: origin)
@@ -188,7 +211,7 @@ public struct DrawerShelfView: View {
                             )
                         } else if note.cardType == .notes {
                             FreeformNoteCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewFreeformNoteWidget(near: origin)
@@ -199,7 +222,7 @@ public struct DrawerShelfView: View {
                             )
                         } else {
                             NoteCardView(
-                                note: $note,
+                                note: shelfBinding($note),
                                 onSpawnWidget: {
                                     let origin = manager.windowOrigin(for: note.id)
                                     manager.spawnNewWidget(near: origin)

@@ -95,85 +95,108 @@ public final class GridSnapManager {
         (screen ?? primaryScreen)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
     }
     
-    // MARK: - Per-Screen Capacity
-    public func maxCols(for screen: NSScreen?) -> Int {
-        let w = visibleFrame(of: screen).width
-        return max(1, Int(floor((w - 2 * edgeMarginX + widgetSpacing) / cellWidth)))
+    // MARK: - Per-Screen Responsive Metrics
+    public struct GridMetrics {
+        public var cols: Int
+        public var rows: Int
+        public var cellW: CGFloat
+        public var cellH: CGFloat
+        public var minX: CGFloat
+        public var topY: CGFloat
     }
     
-    public func maxRows(for screen: NSScreen?) -> Int {
-        let h = visibleFrame(of: screen).height
-        return max(1, Int(floor((h - 2 * edgeMarginY + widgetSpacing) / cellHeight)))
+    private var metricsCache: [String: (frame: NSRect, metrics: GridMetrics)] = [:]
+    
+    public func invalidateMetrics() { metricsCache.removeAll() }
+    
+    /// Columns/rows that fit the display at the base card size, with cell size stretched so the grid
+    /// spans the visibleFrame edge to edge (edge margins and gaps stay fixed).
+    public func metrics(for screen: NSScreen?) -> GridMetrics {
+        let s = screen ?? primaryScreen
+        let vf = visibleFrame(of: s)
+        let key = s?.displayUUID ?? ""
+        if let cached = metricsCache[key], cached.frame == vf { return cached.metrics }
+        let cols = max(1, Int(floor((vf.width - 2 * edgeMarginX + widgetSpacing) / cellWidth)))
+        let rows = max(1, Int(floor((vf.height - 2 * edgeMarginY + widgetSpacing) / cellHeight)))
+        let cellW = (vf.width - 2 * edgeMarginX - CGFloat(cols - 1) * widgetSpacing) / CGFloat(cols)
+        let cellH = (vf.height - 2 * edgeMarginY - CGFloat(rows - 1) * widgetSpacing) / CGFloat(rows)
+        let m = GridMetrics(cols: cols, rows: rows, cellW: cellW, cellH: cellH,
+                            minX: vf.minX + edgeMarginX, topY: vf.maxY - edgeMarginY)
+        metricsCache[key] = (vf, m)
+        return m
     }
     
-    /// True if a card of the given size placed at (col,row) stays inside the screen's grid.
-    public func fits(col: Int, row: Int, cardWidth: Double, cardHeight: Double, screen: NSScreen?) -> Bool {
-        col >= 0 && row >= 0 &&
-        col + colSpan(for: cardWidth) <= maxCols(for: screen) &&
-        row + rowSpan(for: cardHeight) <= maxRows(for: screen)
+    public func maxCols(for screen: NSScreen?) -> Int { metrics(for: screen).cols }
+    public func maxRows(for screen: NSScreen?) -> Int { metrics(for: screen).rows }
+    
+    /// Stretched pixel size of a card spanning (cSpan x rSpan) cells on this screen.
+    public func cardSize(cSpan: Int, rSpan: Int, screen: NSScreen?) -> CGSize {
+        let m = metrics(for: screen)
+        return CGSize(width: CGFloat(cSpan) * m.cellW + CGFloat(cSpan - 1) * widgetSpacing,
+                      height: CGFloat(rSpan) * m.cellH + CGFloat(rSpan - 1) * widgetSpacing)
     }
     
-    /// Last slot (bottom-right) where a card of this size still fits the screen.
-    public func lastFittingSlot(cardWidth: Double, cardHeight: Double, screen: NSScreen?) -> (col: Int, row: Int) {
-        (max(0, maxCols(for: screen) - colSpan(for: cardWidth)),
-         max(0, maxRows(for: screen) - rowSpan(for: cardHeight)))
+    /// Unstretched base size (used by the drawer shelf).
+    public func baseCardSize(cSpan: Int, rSpan: Int) -> CGSize {
+        CGSize(width: CGFloat(cSpan) * cardWidth + CGFloat(cSpan - 1) * widgetSpacing,
+               height: CGFloat(rSpan) * cardHeight + CGFloat(rSpan - 1) * widgetSpacing)
     }
     
-    // MARK: - Multi-Cell Span Calculations
-    public func colSpan(for cardWidth: Double) -> Int {
-        // Round UP (small tolerance) so a card wider than one cell reserves the next cell too.
-        max(1, Int(ceil((CGFloat(cardWidth) + widgetSpacing) / cellWidth - 0.05)))
+    /// Base (persisted) spans of a card.
+    public func spans(of note: NoteCard) -> (c: Int, r: Int) {
+        let d = NoteCard.defaultSpans(for: note.cardType)
+        return (max(1, note.colSpan ?? d.c), max(1, note.rowSpan ?? d.r))
     }
     
-    public func rowSpan(for cardHeight: Double) -> Int {
-        max(1, Int(ceil((CGFloat(cardHeight) + widgetSpacing) / cellHeight - 0.05)))
+    /// Spans a card of a given pixel width/height would take at the base 281x364 cell.
+    public func legacySpans(width: Double, height: Double) -> (c: Int, r: Int) {
+        (max(1, Int(ceil((CGFloat(width) + widgetSpacing) / cellWidth - 0.05))),
+         max(1, Int(ceil((CGFloat(height) + widgetSpacing) / cellHeight - 0.05))))
+    }
+    
+    /// Spans for a pixel size on a screen's stretched grid (used by edge-drag resizing).
+    public func spans(forPixelWidth w: Double, height h: Double, screen: NSScreen?) -> (c: Int, r: Int) {
+        let m = metrics(for: screen)
+        let c = Int(round((CGFloat(w) + widgetSpacing) / (m.cellW + widgetSpacing)))
+        let r = Int(round((CGFloat(h) + widgetSpacing) / (m.cellH + widgetSpacing)))
+        return (max(1, min(c, m.cols)), max(1, min(r, m.rows)))
+    }
+    
+    /// True if a card with these spans placed at (col,row) stays inside the screen's grid.
+    public func fits(col: Int, row: Int, cSpan: Int, rSpan: Int, screen: NSScreen?) -> Bool {
+        col >= 0 && row >= 0 && col + cSpan <= maxCols(for: screen) && row + rSpan <= maxRows(for: screen)
+    }
+    
+    /// Last slot (bottom-right) where a card with these spans still fits the screen.
+    public func lastFittingSlot(cSpan: Int, rSpan: Int, screen: NSScreen?) -> (col: Int, row: Int) {
+        (max(0, maxCols(for: screen) - cSpan), max(0, maxRows(for: screen) - rSpan))
     }
     
     // MARK: - Discrete Grid Slot Coordinate (col, row) from Live Panel Frame
     public func gridSlot(forPanelFrame frame: NSRect, screen: NSScreen?, colSpan cSpan: Int = 1, rowSpan rSpan: Int = 1) -> (col: Int, row: Int) {
-        let visibleFrame = visibleFrame(of: screen)
-        let minX = visibleFrame.minX + edgeMarginX
-        let maxCardTop = visibleFrame.maxY - edgeMarginY
-        
+        let m = metrics(for: screen)
         let cardX = frame.origin.x + 30
         let cardTopY = frame.origin.y + frame.height - 30
-        
-        let relativeX = cardX - minX
-        let col = max(0, min(Int(round(relativeX / cellWidth)), maxCols(for: screen) - cSpan))
-        
-        let relativeY = maxCardTop - cardTopY
-        let row = max(0, min(Int(round(relativeY / cellHeight)), maxRows(for: screen) - rSpan))
-        
+        let col = max(0, min(Int(round((cardX - m.minX) / (m.cellW + widgetSpacing))), m.cols - cSpan))
+        let row = max(0, min(Int(round((m.topY - cardTopY) / (m.cellH + widgetSpacing))), m.rows - rSpan))
         return (col, row)
     }
     
     // MARK: - Discrete Grid Slot Coordinate (col, row) from Screen Point
-    public func gridSlot(for cursor: CGPoint, screen: NSScreen?, cardWidth: CGFloat = 281, cardHeight: CGFloat = 364) -> (col: Int, row: Int) {
-        let visibleFrame = visibleFrame(of: screen)
-        let minX = visibleFrame.minX + edgeMarginX
-        let maxCardTop = visibleFrame.maxY - edgeMarginY
-        
-        let relativeX = cursor.x - minX - (cardWidth / 2)
-        let cSpan = colSpan(for: Double(cardWidth))
-        let rSpan = rowSpan(for: Double(cardHeight))
-        let col = max(0, min(Int(round(relativeX / cellWidth)), maxCols(for: screen) - cSpan))
-        
-        let relativeY = maxCardTop - cursor.y - (cardHeight / 2)
-        let row = max(0, min(Int(round(relativeY / cellHeight)), maxRows(for: screen) - rSpan))
-        
+    public func gridSlot(for cursor: CGPoint, screen: NSScreen?, cSpan: Int = 1, rSpan: Int = 1) -> (col: Int, row: Int) {
+        let m = metrics(for: screen)
+        let size = cardSize(cSpan: cSpan, rSpan: rSpan, screen: screen)
+        let col = max(0, min(Int(round((cursor.x - m.minX - size.width / 2) / (m.cellW + widgetSpacing))), m.cols - cSpan))
+        let row = max(0, min(Int(round((m.topY - cursor.y - size.height / 2) / (m.cellH + widgetSpacing))), m.rows - rSpan))
         return (col, row)
     }
     
     // MARK: - Card Origin from (col, row)
     public func cardOrigin(forCol col: Int, row: Int, cardHeight: CGFloat, screen: NSScreen?) -> CGPoint {
-        let visibleFrame = visibleFrame(of: screen)
-        let minX = visibleFrame.minX + edgeMarginX
-        let maxCardTop = visibleFrame.maxY - edgeMarginY
-        
-        let x = minX + (CGFloat(col) * cellWidth)
-        let topY = maxCardTop - (CGFloat(row) * cellHeight)
-        let y = topY - cardHeight
-        return CGPoint(x: x, y: y)
+        let m = metrics(for: screen)
+        let x = m.minX + CGFloat(col) * (m.cellW + widgetSpacing)
+        let topY = m.topY - CGFloat(row) * (m.cellH + widgetSpacing)
+        return CGPoint(x: x, y: topY - cardHeight)
     }
     
     // MARK: - Panel Origin from Card Origin (Accounting for 30pt glow shadow margin)
@@ -185,75 +208,95 @@ public final class GridSnapManager {
         return CGPoint(x: panelX, y: panelY)
     }
     
-    // MARK: - Find Next Open Slot (Zero Overlap for New Cards)
-    /// Last-resort variant: if the screen is full, returns the last fitting slot (may overlap).
-    public func findNextAvailableSlot(cardWidth targetWidth: Double, cardHeight targetHeight: Double, existingNotes: [NoteCard], screen: NSScreen?) -> (col: Int, row: Int) {
-        findFreeSlot(cardWidth: targetWidth, cardHeight: targetHeight, existingNotes: existingNotes, screen: screen)
-            ?? lastFittingSlot(cardWidth: targetWidth, cardHeight: targetHeight, screen: screen)
+    // MARK: - Occupancy
+    private func occupancy(of notes: [NoteCard], screen: NSScreen?) -> [[Bool]] {
+        let m = metrics(for: screen)
+        var occupied = [[Bool]](repeating: [Bool](repeating: false, count: m.rows), count: m.cols)
+        for note in notes {
+            let s = spans(of: note)
+            let c0 = max(0, note.gridCol), r0 = max(0, note.gridRow)
+            let c1 = min(m.cols, note.gridCol + s.c), r1 = min(m.rows, note.gridRow + s.r)
+            guard c0 < c1, r0 < r1 else { continue }
+            for c in c0..<c1 { for r in r0..<r1 { occupied[c][r] = true } }
+        }
+        return occupied
     }
     
-    /// First free slot (reading order) that fits the screen, or nil if the screen is full.
-    public func findFreeSlot(cardWidth targetWidth: Double, cardHeight targetHeight: Double, existingNotes: [NoteCard], screen: NSScreen?) -> (col: Int, row: Int)? {
-        let cSpan = colSpan(for: targetWidth)
-        let rSpan = rowSpan(for: targetHeight)
-        
-        let maxCols = self.maxCols(for: screen)
-        let maxRows = self.maxRows(for: screen)
-        var occupied = [[Bool]](repeating: [Bool](repeating: false, count: maxRows), count: maxCols)
-        
-        for note in existingNotes {
-            let noteCSpan = colSpan(for: note.width)
-            let noteRSpan = rowSpan(for: note.height)
-            let colStart = max(0, note.gridCol)
-            let rowStart = max(0, note.gridRow)
-            let colEnd = min(maxCols, note.gridCol + noteCSpan)
-            let rowEnd = min(maxRows, note.gridRow + noteRSpan)
-            guard colStart < colEnd, rowStart < rowEnd else { continue }
-            for c in colStart..<colEnd {
-                for r in rowStart..<rowEnd {
-                    occupied[c][r] = true
-                }
-            }
-        }
-        
-        for r in 0..<maxRows {
-            for c in 0..<maxCols {
+    // MARK: - Find Next Open Slot (Zero Overlap for New Cards)
+    /// Last-resort variant: if the screen is full, returns the last fitting slot (may overlap).
+    public func findNextAvailableSlot(cSpan: Int, rSpan: Int, existingNotes: [NoteCard], screen: NSScreen?) -> (col: Int, row: Int) {
+        findFreeSlot(cSpan: cSpan, rSpan: rSpan, existingNotes: existingNotes, screen: screen)
+            ?? lastFittingSlot(cSpan: cSpan, rSpan: rSpan, screen: screen)
+    }
+    
+    /// First free slot (reading order) that fits the screen (using base spans), or nil if full.
+    public func findFreeSlot(cSpan: Int, rSpan: Int, existingNotes: [NoteCard], screen: NSScreen?) -> (col: Int, row: Int)? {
+        let m = metrics(for: screen)
+        let occupied = occupancy(of: existingNotes, screen: screen)
+        for r in 0..<m.rows {
+            for c in 0..<m.cols {
+                guard c + cSpan <= m.cols, r + rSpan <= m.rows else { continue }
                 var canFit = true
-                if c + cSpan > maxCols || r + rSpan > maxRows {
-                    canFit = false
-                } else {
-                    for testC in c..<(c + cSpan) {
-                        for testR in r..<(r + rSpan) {
-                            if occupied[testC][testR] {
-                                canFit = false
-                                break
-                            }
-                        }
-                        if !canFit { break }
-                    }
+                outer: for tc in c..<(c + cSpan) {
+                    for tr in r..<(r + rSpan) where occupied[tc][tr] { canFit = false; break outer }
                 }
-                if canFit {
-                    return (c, r)
-                }
+                if canFit { return (c, r) }
             }
         }
         return nil
     }
     
-    /// True if a card of the given size fits at (col,row) without touching any of `existingNotes`.
-    public func isSlotFree(col: Int, row: Int, cardWidth: Double, cardHeight: Double, existingNotes: [NoteCard], screen: NSScreen?) -> Bool {
-        guard fits(col: col, row: row, cardWidth: cardWidth, cardHeight: cardHeight, screen: screen) else { return false }
-        let cSpan = colSpan(for: cardWidth)
-        let rSpan = rowSpan(for: cardHeight)
+    /// True if a card with these spans fits at (col,row) without touching any of `existingNotes`.
+    public func isSlotFree(col: Int, row: Int, cSpan: Int, rSpan: Int, existingNotes: [NoteCard], screen: NSScreen?) -> Bool {
+        guard fits(col: col, row: row, cSpan: cSpan, rSpan: rSpan, screen: screen) else { return false }
         for n in existingNotes {
-            let nCSpan = colSpan(for: n.width)
-            let nRSpan = rowSpan(for: n.height)
-            if !(col + cSpan <= n.gridCol || col >= n.gridCol + nCSpan ||
-                 row + rSpan <= n.gridRow || row >= n.gridRow + nRSpan) {
+            let s = spans(of: n)
+            if !(col + cSpan <= n.gridCol || col >= n.gridCol + s.c ||
+                 row + rSpan <= n.gridRow || row >= n.gridRow + s.r) {
                 return false
             }
         }
         return true
+    }
+    
+    // MARK: - Expansion (display-only)
+    /// Grows each card (reading order) right then down into empty cells until nothing can grow.
+    public func expandedSpans(for notes: [NoteCard], slots: [UUID: (col: Int, row: Int)], screen: NSScreen?) -> [UUID: (c: Int, r: Int)] {
+        let m = metrics(for: screen)
+        var occupied = [[Bool]](repeating: [Bool](repeating: false, count: m.rows), count: m.cols)
+        var items: [(id: UUID, col: Int, row: Int, c: Int, r: Int)] = []
+        for n in notes {
+            let s = spans(of: n)
+            let slot = slots[n.id] ?? (n.gridCol, n.gridRow)
+            let col = max(0, min(slot.col, m.cols - 1)), row = max(0, min(slot.row, m.rows - 1))
+            let c = min(s.c, m.cols - col), r = min(s.r, m.rows - row)
+            for cc in col..<(col + c) { for rr in row..<(row + r) { occupied[cc][rr] = true } }
+            items.append((n.id, col, row, c, r))
+        }
+        items.sort { $0.row != $1.row ? $0.row < $1.row : $0.col < $1.col }
+        var changed = true
+        while changed {
+            changed = false
+            for i in items.indices {
+                var it = items[i]
+                while it.col + it.c < m.cols,
+                      (it.row..<(it.row + it.r)).allSatisfy({ !occupied[it.col + it.c][$0] }) {
+                    for rr in it.row..<(it.row + it.r) { occupied[it.col + it.c][rr] = true }
+                    it.c += 1
+                    changed = true
+                }
+                while it.row + it.r < m.rows,
+                      (it.col..<(it.col + it.c)).allSatisfy({ !occupied[$0][it.row + it.r] }) {
+                    for cc in it.col..<(it.col + it.c) { occupied[cc][it.row + it.r] = true }
+                    it.r += 1
+                    changed = true
+                }
+                items[i] = it
+            }
+        }
+        var result: [UUID: (c: Int, r: Int)] = [:]
+        for it in items { result[it.id] = (it.c, it.r) }
+        return result
     }
     
     // MARK: - 2D Constraint-Based Layout Solver (Zero Overlap Guarantee)
@@ -268,8 +311,8 @@ public final class GridSnapManager {
         guard let movingNote = allNotes.first(where: { $0.id == movingNoteId }),
               let movingOrig = currentSlots[movingNoteId] else { return currentSlots }
         
-        let movingColSpan = colSpan(for: movingNote.width)
-        let movingRowSpan = rowSpan(for: movingNote.height)
+        let movingColSpan = spans(of: movingNote).c
+        let movingRowSpan = spans(of: movingNote).r
         
         let maxCols = self.maxCols(for: screen)
         let maxRows = self.maxRows(for: screen)
@@ -310,8 +353,8 @@ public final class GridSnapManager {
         
         for note in otherNotes {
             guard let slot = currentSlots[note.id] else { continue }
-            let cSpan = colSpan(for: note.width)
-            let rSpan = rowSpan(for: note.height)
+            let cSpan = spans(of: note).c
+            let rSpan = spans(of: note).r
             
             if canPlace(col: slot.col, row: slot.row, cSpan: cSpan, rSpan: rSpan) {
                 markPlaced(id: note.id, col: slot.col, row: slot.row, cSpan: cSpan, rSpan: rSpan)
@@ -323,8 +366,8 @@ public final class GridSnapManager {
         
         // 3. Sort unplaced notes so larger widgets fill matching pockets first
         unplacedNotes.sort {
-            let area0 = colSpan(for: $0.width) * rowSpan(for: $0.height)
-            let area1 = colSpan(for: $1.width) * rowSpan(for: $1.height)
+            let area0 = spans(of: $0).c * spans(of: $0).r
+            let area1 = spans(of: $1).c * spans(of: $1).r
             if area0 != area1 { return area0 > area1 }
             let slot0 = currentSlots[$0.id] ?? (0, 0)
             let slot1 = currentSlots[$1.id] ?? (0, 0)
@@ -352,8 +395,8 @@ public final class GridSnapManager {
         }
         
         for note in unplacedNotes {
-            let cSpan = colSpan(for: note.width)
-            let rSpan = rowSpan(for: note.height)
+            let cSpan = spans(of: note).c
+            let rSpan = spans(of: note).r
             var placedIt = false
             
             for cand in candidateSlots {
@@ -366,7 +409,7 @@ public final class GridSnapManager {
             }
             if !placedIt {
                 // Screen full: last fitting slot (overlap allowed as last resort), never off-screen.
-                let fallback = lastFittingSlot(cardWidth: note.width, cardHeight: note.height, screen: screen)
+                let fallback = lastFittingSlot(cSpan: cSpan, rSpan: rSpan, screen: screen)
                 resultSlots[note.id] = fallback
             }
         }

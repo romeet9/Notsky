@@ -49,7 +49,7 @@ public final class WidgetWindowManager: NSObject {
                 queue: .main
             ) { [weak self] _ in
                 Task { @MainActor in
-                    self?.relayoutAllWidgets()
+                    self?.relayoutAllWidgets(animated: true)
                 }
             }
         }
@@ -64,8 +64,9 @@ public final class WidgetWindowManager: NSObject {
     
     /// Re-lays out every widget onto its own screen. Cards whose display is gone fall back to the
     /// primary display but keep their saved screenID so they return when the display is re-plugged.
-    public func relayoutAllWidgets() {
+    public func relayoutAllWidgets(animated: Bool = false) {
         let grid = GridSnapManager.shared
+        grid.invalidateMetrics()
         displaySlotOverrides.removeAll()
         
         var placedByScreen: [String: [NoteCard]] = [:]
@@ -81,6 +82,7 @@ public final class WidgetWindowManager: NSObject {
         
         for index in ordered {
             var note = store.notes[index]
+            let sp = grid.spans(of: note)
             let orphan = !isNative(note)
             let home = grid.screen(for: note.screenID)
             let homeKey = home?.displayUUID ?? ""
@@ -88,14 +90,14 @@ public final class WidgetWindowManager: NSObject {
             var finalKey = homeKey
             var slot = (col: note.gridCol, row: note.gridRow)
             
-            if !grid.isSlotFree(col: slot.col, row: slot.row, cardWidth: note.width, cardHeight: note.height, existingNotes: homePlaced, screen: home) {
-                if let f = grid.findFreeSlot(cardWidth: note.width, cardHeight: note.height, existingNotes: homePlaced, screen: home) {
+            if !grid.isSlotFree(col: slot.col, row: slot.row, cSpan: sp.c, rSpan: sp.r, existingNotes: homePlaced, screen: home) {
+                if let f = grid.findFreeSlot(cSpan: sp.c, rSpan: sp.r, existingNotes: homePlaced, screen: home) {
                     slot = f
                 } else {
                     var found = false
                     for other in NSScreen.screens where (other.displayUUID ?? "") != homeKey {
                         let key = other.displayUUID ?? ""
-                        if let f = grid.findFreeSlot(cardWidth: note.width, cardHeight: note.height, existingNotes: placedByScreen[key] ?? [], screen: other) {
+                        if let f = grid.findFreeSlot(cSpan: sp.c, rSpan: sp.r, existingNotes: placedByScreen[key] ?? [], screen: other) {
                             slot = f
                             finalKey = key
                             found = true
@@ -103,7 +105,7 @@ public final class WidgetWindowManager: NSObject {
                         }
                     }
                     if !found {
-                        slot = grid.lastFittingSlot(cardWidth: note.width, cardHeight: note.height, screen: home)
+                        slot = grid.lastFittingSlot(cSpan: sp.c, rSpan: sp.r, screen: home)
                     }
                 }
             }
@@ -126,21 +128,57 @@ public final class WidgetWindowManager: NSObject {
             placedByScreen[finalKey, default: []].append(note)
         }
         
-        for index in store.notes.indices {
-            let note = store.notes[index]
-            let origin = cardOrigin(for: note)
-            store.notes[index].positionX = origin.x
-            store.notes[index].positionY = origin.y
-            if let panel = windowControllers[note.id]?.window {
-                let panelOrigin = grid.panelOrigin(forCardOrigin: origin, cardHeight: CGFloat(note.height), panelHeight: panel.frame.height)
-                panel.setFrameOrigin(panelOrigin)
-            } else {
-                openWidgetWindow(for: note.id, at: origin)
+        applyLayout(animated: animated)
+    }
+    
+    /// Effective layout: base spans are the source of truth; each screen then expands cards into empty
+    /// neighbouring cells. Effective sizes are display-only (written to note.width/height, never to spans).
+    public func applyLayout(animated: Bool) {
+        let grid = GridSnapManager.shared
+        var groups: [String: (screen: NSScreen?, idx: [Int])] = [:]
+        for i in store.notes.indices {
+            let sc = screen(for: store.notes[i])
+            groups[sc?.displayUUID ?? "", default: (sc, [])].idx.append(i)
+        }
+        for (_, group) in groups {
+            let notes = group.idx.map { store.notes[$0] }
+            var slots: [UUID: (col: Int, row: Int)] = [:]
+            for n in notes { slots[n.id] = slot(for: n) }
+            let eff = grid.expandedSpans(for: notes, slots: slots, screen: group.screen)
+            for i in group.idx {
+                let n = store.notes[i]
+                let s = eff[n.id] ?? grid.spans(of: n)
+                let size = grid.cardSize(cSpan: s.c, rSpan: s.r, screen: group.screen)
+                let sl = slots[n.id] ?? (n.gridCol, n.gridRow)
+                let origin = grid.cardOrigin(forCol: sl.col, row: sl.row, cardHeight: size.height, screen: group.screen)
+                if abs(n.width - Double(size.width)) > 0.01 { store.notes[i].width = Double(size.width) }
+                if abs(n.height - Double(size.height)) > 0.01 { store.notes[i].height = Double(size.height) }
+                if abs(n.positionX - Double(origin.x)) > 0.01 { store.notes[i].positionX = origin.x }
+                if abs(n.positionY - Double(origin.y)) > 0.01 { store.notes[i].positionY = origin.y }
+                
+                guard let panel = windowControllers[n.id]?.window else {
+                    openWidgetWindow(for: n.id, at: origin)
+                    continue
+                }
+                let panelSize = CGSize(width: size.width + 60, height: size.height + 60)
+                let po = grid.panelOrigin(forCardOrigin: origin, cardHeight: size.height, panelHeight: panelSize.height)
+                let target = NSRect(origin: po, size: panelSize)
+                let cur = panel.frame
+                if abs(cur.origin.x - target.origin.x) < 0.25 && abs(cur.origin.y - target.origin.y) < 0.25
+                    && abs(cur.width - target.width) < 0.25 && abs(cur.height - target.height) < 0.25 { continue }
+                if animated {
+                    Motion.setFrame(panel, to: target, duration: 0.25)
+                } else {
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    panel.setFrame(target, display: true, animate: false)
+                    CATransaction.commit()
+                }
             }
         }
     }
     
-    public func openWidgetWindow(for noteId: UUID, at origin: CGPoint? = nil) {
+public func openWidgetWindow(for noteId: UUID, at origin: CGPoint? = nil) {
         if let existing = windowControllers[noteId] {
             existing.window?.orderFront(nil)
             return
@@ -193,69 +231,36 @@ public final class WidgetWindowManager: NSObject {
         panel.orderFront(nil)
     }
     
+    /// Edge-drag resize: converts the dragged pixel size into grid spans (the source of truth), then re-lays out.
     public func updateWindowSize(for noteId: UUID, newWidth: Double, newHeight: Double) {
-        guard let controller = windowControllers[noteId], let panel = controller.window else { return }
-        let currentFrame = panel.frame
-        let targetPanelWidth = CGFloat(newWidth) + 60
-        let targetPanelHeight = CGFloat(newHeight) + 60
-        
-        // Preserve top-left anchor when window height expands downwards
-        let currentTopY = currentFrame.origin.y + currentFrame.height
-        let newOriginY = currentTopY - targetPanelHeight
-        
-        if abs(currentFrame.width - targetPanelWidth) < 0.25 &&
-           abs(currentFrame.height - targetPanelHeight) < 0.25 &&
-           abs(currentFrame.origin.y - newOriginY) < 0.25 {
-            return
-        }
-        
-        let newFrame = NSRect(
-            x: currentFrame.origin.x,
-            y: newOriginY,
-            width: targetPanelWidth,
-            height: targetPanelHeight
-        )
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        panel.setFrame(newFrame, display: true, animate: false)
-        CATransaction.commit()
-        refitIfNeeded(noteId: noteId, width: newWidth, height: newHeight)
-    }
-    
-    /// After a card grows, relocate it if it no longer fits its screen's grid.
-    private func refitIfNeeded(noteId: UUID, width: Double, height: Double) {
-        guard let idx = store.notes.firstIndex(where: { $0.id == noteId }),
-              let panel = windowControllers[noteId]?.window else { return }
+        guard let idx = store.notes.firstIndex(where: { $0.id == noteId }) else { return }
         let grid = GridSnapManager.shared
         let note = store.notes[idx]
         let home = screen(for: note)
-        if grid.fits(col: note.gridCol, row: note.gridRow, cardWidth: width, cardHeight: height, screen: home) { return }
+        let want = grid.spans(forPixelWidth: newWidth, height: newHeight, screen: home)
+        let cur = grid.spans(of: note)
+        let sl = slot(for: note)
+        let others = grid.notes(store.notes, onScreen: home?.displayUUID).filter { $0.id != noteId }
+        let m = grid.metrics(for: home)
         
-        let homeKey = home?.displayUUID ?? ""
-        let others = store.notes.filter { $0.id != noteId }
-        var slot: (col: Int, row: Int)?
-        var target = home
-        slot = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: grid.notes(others, onScreen: homeKey), screen: home)
-        if slot == nil {
-            for other in NSScreen.screens where (other.displayUUID ?? "") != homeKey {
-                if let f = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: grid.notes(others, onScreen: other.displayUUID), screen: other) {
-                    slot = f
-                    target = other
-                    break
-                }
-            }
+        func tryFit(_ c: Int, _ r: Int) -> (col: Int, row: Int)? {
+            let col = max(0, min(sl.col, m.cols - c))
+            let row = max(0, min(sl.row, m.rows - r))
+            return grid.isSlotFree(col: col, row: row, cSpan: c, rSpan: r, existingNotes: others, screen: home) ? (col, row) : nil
         }
-        let final = slot ?? grid.lastFittingSlot(cardWidth: width, cardHeight: height, screen: home)
-        if slot == nil { target = home }
-        store.notes[idx].gridCol = final.col
-        store.notes[idx].gridRow = final.row
-        if let t = target, t.displayUUID != home?.displayUUID { store.notes[idx].screenID = t.displayUUID }
-        displaySlotOverrides.removeValue(forKey: noteId)
-        let origin = grid.cardOrigin(forCol: final.col, row: final.row, cardHeight: CGFloat(height), screen: target)
-        store.notes[idx].positionX = origin.x
-        store.notes[idx].positionY = origin.y
-        let po = grid.panelOrigin(forCardOrigin: origin, cardHeight: CGFloat(height), panelHeight: panel.frame.height)
-        panel.setFrameOrigin(po)
+        let options = [(want.c, want.r), (want.c, cur.r), (cur.c, want.r)]
+        for o in options {
+            guard let pos = tryFit(o.0, o.1) else { continue }
+            if o.0 != cur.c || o.1 != cur.r || pos.col != note.gridCol || pos.row != note.gridRow {
+                store.notes[idx].colSpan = o.0
+                store.notes[idx].rowSpan = o.1
+                store.notes[idx].gridCol = pos.col
+                store.notes[idx].gridRow = pos.row
+                displaySlotOverrides.removeValue(forKey: noteId)
+                applyLayout(animated: true)
+            }
+            return
+        }
     }
     
     // MARK: - Dragging & Live Displacement Swapping
@@ -276,15 +281,14 @@ public final class WidgetWindowManager: NSObject {
     
     public func updateDrag(noteId: UUID, screenMouse: CGPoint, panel: WidgetPanel) {
         guard let note = store.notes.first(where: { $0.id == noteId }) else { return }
-        let cardW = CGFloat(note.width)
-        let cardH = CGFloat(note.height)
-        
         let grid = GridSnapManager.shared
+        let sp = grid.spans(of: note)
         let targetScreen = grid.targetScreen(mouse: NSEvent.mouseLocation, panelFrame: panel.frame)
         let targetScreenID = targetScreen?.displayUUID
-        let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: grid.colSpan(for: note.width), rowSpan: grid.rowSpan(for: note.height))
-        let targetSlotOrigin = grid.cardOrigin(forCol: targetCol, row: targetRow, cardHeight: cardH, screen: targetScreen)
-        grid.showGuide(at: targetSlotOrigin, width: cardW, height: cardH)
+        let guideSize = grid.cardSize(cSpan: sp.c, rSpan: sp.r, screen: targetScreen)
+        let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: sp.c, rowSpan: sp.r)
+        let targetSlotOrigin = grid.cardOrigin(forCol: targetCol, row: targetRow, cardHeight: guideSize.height, screen: targetScreen)
+        grid.showGuide(at: targetSlotOrigin, width: guideSize.width, height: guideSize.height)
         
         let screenKey = targetScreenID ?? ""
         if lastPreviewTargetCol != targetCol || lastPreviewTargetRow != targetRow || lastPreviewScreenKey != screenKey {
@@ -327,13 +331,13 @@ public final class WidgetWindowManager: NSObject {
         GridSnapManager.shared.hideGuide()
         
         guard let note = store.notes.first(where: { $0.id == noteId }) else { return }
-        let cardH = CGFloat(note.height)
         
         if didMove {
             let grid = GridSnapManager.shared
+            let sp = grid.spans(of: note)
             let targetScreen = grid.targetScreen(mouse: NSEvent.mouseLocation, panelFrame: panel.frame)
             let targetScreenID = targetScreen?.displayUUID
-            let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: grid.colSpan(for: note.width), rowSpan: grid.rowSpan(for: note.height))
+            let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: sp.c, rowSpan: sp.r)
             
             let targetNotes = grid.notes(store.notes, onScreen: targetScreenID).filter { $0.id != noteId }
             let finalSlots = grid.solveNonOverlappingSlots(
@@ -345,37 +349,15 @@ public final class WidgetWindowManager: NSObject {
                 screen: targetScreen
             )
             
-            // 1. Animate the dragged panel directly into its snapped slot
-            let draggedSlot = finalSlots[noteId] ?? (targetCol, targetRow)
-            let draggedCardOrigin = grid.cardOrigin(forCol: draggedSlot.col, row: draggedSlot.row, cardHeight: cardH, screen: targetScreen)
-            let draggedPanelOrigin = GridSnapManager.shared.panelOrigin(forCardOrigin: draggedCardOrigin, cardHeight: cardH, panelHeight: panel.frame.height)
-            let draggedTargetFrame = NSRect(origin: draggedPanelOrigin, size: panel.frame.size)
-            
-            Motion.setFrame(panel, to: draggedTargetFrame, duration: 0.20)
-            
-            // 2. Commit all final grid slots & origins to NoteStore models and animate any remaining panels
-            for (idx, n) in store.notes.enumerated() {
-                if let slot = finalSlots[n.id] {
-                    store.notes[idx].gridCol = slot.col
-                    store.notes[idx].gridRow = slot.row
-                    if n.id == noteId {
-                        store.notes[idx].screenID = targetScreenID
-                    }
-                    
-                    let cardOrigin = grid.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(n.height), screen: targetScreen)
-                    store.notes[idx].positionX = cardOrigin.x
-                    store.notes[idx].positionY = cardOrigin.y
-                    
-                    if n.id != noteId, let otherPanel = windowControllers[n.id]?.window as? WidgetPanel {
-                        let otherPanelOrigin = grid.panelOrigin(forCardOrigin: cardOrigin, cardHeight: CGFloat(n.height), panelHeight: otherPanel.frame.height)
-                        let otherTargetFrame = NSRect(origin: otherPanelOrigin, size: otherPanel.frame.size)
-                        if otherPanel.frame.origin != otherPanelOrigin {
-                            Motion.setFrame(otherPanel, to: otherTargetFrame, duration: 0.20)
-                        }
-                    }
-                }
+            for idx in store.notes.indices {
+                let id = store.notes[idx].id
+                guard let slot = finalSlots[id] else { continue }
+                store.notes[idx].gridCol = slot.col
+                store.notes[idx].gridRow = slot.row
+                if id == noteId { store.notes[idx].screenID = targetScreenID }
             }
             for id in finalSlots.keys { displaySlotOverrides.removeValue(forKey: id) }
+            applyLayout(animated: true)
             SensoryFeedback.buttonClicked()
         }
     }
@@ -389,6 +371,7 @@ public final class WidgetWindowManager: NSObject {
         make: (_ id: UUID, _ slot: (col: Int, row: Int), _ origin: CGPoint, _ screenID: String?) -> NoteCard
     ) -> UUID? {
         let grid = GridSnapManager.shared
+        let sp = grid.legacySpans(width: width, height: height)
         var screens: [NSScreen?] = []
         let mouse = grid.screenUnderMouse()
         if let mouse { screens.append(mouse) }
@@ -398,16 +381,23 @@ public final class WidgetWindowManager: NSObject {
         for screen in screens {
             let screenID = screen?.displayUUID
             let sameScreenNotes = grid.notes(store.notes, onScreen: screenID)
-            guard var slot = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) else { continue }
+            guard var slot = grid.findFreeSlot(cSpan: sp.c, rSpan: sp.r, existingNotes: sameScreenNotes, screen: screen) else { continue }
             if let candidate = preferredCandidate?(screen),
-               grid.isSlotFree(col: candidate.col, row: candidate.row, cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) {
+               grid.isSlotFree(col: candidate.col, row: candidate.row, cSpan: sp.c, rSpan: sp.r, existingNotes: sameScreenNotes, screen: screen) {
                 slot = candidate
             }
             let id = UUID()
-            let origin = grid.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(height), screen: screen)
-            let note = make(id, slot, origin, screenID)
+            let size = grid.cardSize(cSpan: sp.c, rSpan: sp.r, screen: screen)
+            let origin = grid.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: size.height, screen: screen)
+            var note = make(id, slot, origin, screenID)
+            note.colSpan = sp.c
+            note.rowSpan = sp.r
+            note.width = Double(size.width)
+            note.height = Double(size.height)
             store.notes.append(note)
             openWidgetWindow(for: id, at: origin)
+            // Every card shrinks back to base spans first, then expands again around the new card.
+            applyLayout(animated: true)
             return id
         }
         return nil
@@ -511,7 +501,7 @@ public final class WidgetWindowManager: NSObject {
     
     @discardableResult
     public func spawnNewFoldersWidget(near origin: CGPoint? = nil) -> UUID? {
-        let cardWidth: Double = 360.0
+        let cardWidth: Double = 281.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
@@ -656,6 +646,7 @@ public final class WidgetWindowManager: NSObject {
             windowControllers.removeValue(forKey: noteId)
         }
         store.deleteNote(id: noteId)
+        applyLayout(animated: true)
         syncNowPlayingService()
         syncLinearService()
         syncVoiceOpenService()
@@ -664,8 +655,7 @@ public final class WidgetWindowManager: NSObject {
     public func windowOrigin(for noteId: UUID) -> CGPoint? {
         guard let panel = windowControllers[noteId]?.window else { return nil }
         let panelOrigin = panel.frame.origin
-        let cardBottomY = panelOrigin.y + panel.frame.height - 30 - GridSnapManager.shared.cardHeight
-        return CGPoint(x: panelOrigin.x + 30, y: cardBottomY)
+        return CGPoint(x: panelOrigin.x + 30, y: panelOrigin.y + 30)
     }
     
     public func resetWidgetPositions() {
@@ -790,6 +780,7 @@ public final class WidgetWindowManager: NSObject {
             store.notes[index].positionY = origin.y
             openWidgetWindow(for: note.id, at: origin)
         }
+        applyLayout(animated: false)
     }
     
     /// Fills sample content, but only into a freshly created (previously empty) workspace.

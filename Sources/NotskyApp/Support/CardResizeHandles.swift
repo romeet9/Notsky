@@ -19,7 +19,7 @@ struct CardResizeHandles: View {
     }
 
     private func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
-        max(range.lowerBound, min(range.upperBound, value))
+        max(range.lowerBound, value) // upper bound comes from the screen grid (spans clamp to its columns/rows)
     }
 
     private func setCursor(_ cursor: NSCursor, inside: Bool) {
@@ -30,8 +30,6 @@ struct CardResizeHandles: View {
         let newW = width ?? note.width
         let newH = height ?? note.height
         guard abs(note.width - newW) >= 0.5 || abs(note.height - newH) >= 0.5 else { return }
-        note.width = newW
-        note.height = newH
         WidgetWindowManager.shared.updateWindowSize(for: note.id, newWidth: newW, newHeight: newH)
     }
 

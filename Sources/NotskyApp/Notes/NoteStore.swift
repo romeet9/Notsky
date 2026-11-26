@@ -150,32 +150,8 @@ public final class NoteStore {
     
     public init() {
         if case .loaded(let persistedNotes, let persistedFolders) = Self.loadFromDisk() {
-            var loadedNotes = persistedNotes
-            for i in loadedNotes.indices {
-                switch loadedNotes[i].cardType {
-                case .tasks:
-                    loadedNotes[i].width = 281
-                    loadedNotes[i].height = 364
-                case .notes:
-                    loadedNotes[i].width = 586
-                    loadedNotes[i].height = 364
-                case .finder:
-                    loadedNotes[i].width = 586
-                    loadedNotes[i].height = 364
-                case .folders:
-                    loadedNotes[i].width = 360
-                    loadedNotes[i].height = 364
-                case .nowPlaying:
-                    loadedNotes[i].width = 281
-                    loadedNotes[i].height = 364
-                case .linear:
-                    loadedNotes[i].width = 586
-                    loadedNotes[i].height = 364
-                case .voiceOpen:
-                    loadedNotes[i].width = 281
-                    loadedNotes[i].height = 364
-                }
-            }
+            // Pixel sizes are derived from grid spans at layout time (WidgetWindowManager).
+            let loadedNotes = persistedNotes
             self.notes = loadedNotes
             self.folders = persistedFolders.isEmpty ? Self.defaultDemoFolders : persistedFolders
             saveToDisk()
@@ -345,7 +321,7 @@ public final class NoteStore {
             chatMessages: [],
             positionX: 120 + offset,
             positionY: 120 + offset,
-            width: 360,
+            width: 281,
             height: 364
         )
         notes.append(newCard)

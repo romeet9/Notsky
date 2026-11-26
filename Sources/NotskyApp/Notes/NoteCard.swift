@@ -23,6 +23,16 @@ public struct NoteCard: Identifiable, Codable, Equatable {
     public var isPinned: Bool
     /// Display UUID (CGDisplayCreateUUIDFromDisplayID) the card lives on. nil == primary display.
     public var screenID: String?
+    /// Base size in grid cells (persisted). nil == the card type's default. Pixel width/height are derived at layout time.
+    public var colSpan: Int?
+    public var rowSpan: Int?
+    
+    public static func defaultSpans(for type: CardType) -> (c: Int, r: Int) {
+        switch type {
+        case .tasks, .folders, .nowPlaying, .voiceOpen: return (1, 1)
+        case .notes, .finder, .linear: return (2, 1)
+        }
+    }
     
     public init(
         id: UUID = UUID(),
@@ -45,7 +55,9 @@ public struct NoteCard: Identifiable, Codable, Equatable {
         timeRemaining: Int = 25 * 60,
         isTimerRunning: Bool = false,
         isPinned: Bool = false,
-        screenID: String? = nil
+        screenID: String? = nil,
+        colSpan: Int? = nil,
+        rowSpan: Int? = nil
     ) {
         self.id = id
         self.cardType = cardType
@@ -72,5 +84,7 @@ public struct NoteCard: Identifiable, Codable, Equatable {
         self.isTimerRunning = isTimerRunning
         self.isPinned = isPinned
         self.screenID = screenID
+        self.colSpan = colSpan
+        self.rowSpan = rowSpan
     }
 }
