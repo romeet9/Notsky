@@ -68,44 +68,62 @@ public final class WidgetWindowManager: NSObject {
         let grid = GridSnapManager.shared
         displaySlotOverrides.removeAll()
         
-        // Cards sitting on a connected display keep their saved slot; orphans are resolved afterwards.
         var placedByScreen: [String: [NoteCard]] = [:]
-        var orphans: [NoteCard] = []
-        // Native cards are placed in reading order; any card overlapping an earlier one
-        // (e.g. a card wider than its saved span) is moved to the next free slot and saved.
+        // Natives first (saved display connected), orphans (display gone) after; each in reading order.
         let readingOrder = store.notes.indices.sorted {
             let a = store.notes[$0], b = store.notes[$1]
             return a.gridRow != b.gridRow ? a.gridRow < b.gridRow : a.gridCol < b.gridCol
         }
-        for index in readingOrder {
-            let note = store.notes[index]
-            let resolved = grid.resolvedScreenID(note.screenID)
-            let isNative = note.screenID == nil || note.screenID == resolved
-            if isNative {
-                let key = resolved ?? ""
-                let placed = placedByScreen[key] ?? []
-                if !grid.isSlotFree(col: note.gridCol, row: note.gridRow, cardWidth: note.width, cardHeight: note.height, existingNotes: placed) {
-                    let free = grid.findNextAvailableSlot(cardWidth: note.width, cardHeight: note.height, existingNotes: placed)
-                    store.notes[index].gridCol = free.col
-                    store.notes[index].gridRow = free.row
-                }
-                placedByScreen[key, default: []].append(store.notes[index])
-            } else {
-                orphans.append(note)
-            }
+        func isNative(_ n: NoteCard) -> Bool {
+            n.screenID == nil || n.screenID == grid.resolvedScreenID(n.screenID)
         }
-        for orphan in orphans {
-            let key = grid.resolvedScreenID(orphan.screenID) ?? ""
-            var placed = placedByScreen[key] ?? []
-            var candidate = orphan
-            if !grid.isSlotFree(col: orphan.gridCol, row: orphan.gridRow, cardWidth: orphan.width, cardHeight: orphan.height, existingNotes: placed) {
-                let free = grid.findNextAvailableSlot(cardWidth: orphan.width, cardHeight: orphan.height, existingNotes: placed)
-                candidate.gridCol = free.col
-                candidate.gridRow = free.row
-                displaySlotOverrides[orphan.id] = free
+        let ordered = readingOrder.filter { isNative(store.notes[$0]) } + readingOrder.filter { !isNative(store.notes[$0]) }
+        
+        for index in ordered {
+            var note = store.notes[index]
+            let orphan = !isNative(note)
+            let home = grid.screen(for: note.screenID)
+            let homeKey = home?.displayUUID ?? ""
+            let homePlaced = placedByScreen[homeKey] ?? []
+            var finalKey = homeKey
+            var slot = (col: note.gridCol, row: note.gridRow)
+            
+            if !grid.isSlotFree(col: slot.col, row: slot.row, cardWidth: note.width, cardHeight: note.height, existingNotes: homePlaced, screen: home) {
+                if let f = grid.findFreeSlot(cardWidth: note.width, cardHeight: note.height, existingNotes: homePlaced, screen: home) {
+                    slot = f
+                } else {
+                    var found = false
+                    for other in NSScreen.screens where (other.displayUUID ?? "") != homeKey {
+                        let key = other.displayUUID ?? ""
+                        if let f = grid.findFreeSlot(cardWidth: note.width, cardHeight: note.height, existingNotes: placedByScreen[key] ?? [], screen: other) {
+                            slot = f
+                            finalKey = key
+                            found = true
+                            break
+                        }
+                    }
+                    if !found {
+                        slot = grid.lastFittingSlot(cardWidth: note.width, cardHeight: note.height, screen: home)
+                    }
+                }
             }
-            placed.append(candidate)
-            placedByScreen[key] = placed
+            
+            let moved = slot.col != note.gridCol || slot.row != note.gridRow
+            if finalKey != homeKey {
+                store.notes[index].screenID = finalKey
+                store.notes[index].gridCol = slot.col
+                store.notes[index].gridRow = slot.row
+            } else if moved {
+                if orphan {
+                    displaySlotOverrides[note.id] = slot
+                } else {
+                    store.notes[index].gridCol = slot.col
+                    store.notes[index].gridRow = slot.row
+                }
+            }
+            note.gridCol = slot.col
+            note.gridRow = slot.row
+            placedByScreen[finalKey, default: []].append(note)
         }
         
         for index in store.notes.indices {
@@ -201,6 +219,43 @@ public final class WidgetWindowManager: NSObject {
         CATransaction.setDisableActions(true)
         panel.setFrame(newFrame, display: true, animate: false)
         CATransaction.commit()
+        refitIfNeeded(noteId: noteId, width: newWidth, height: newHeight)
+    }
+    
+    /// After a card grows, relocate it if it no longer fits its screen's grid.
+    private func refitIfNeeded(noteId: UUID, width: Double, height: Double) {
+        guard let idx = store.notes.firstIndex(where: { $0.id == noteId }),
+              let panel = windowControllers[noteId]?.window else { return }
+        let grid = GridSnapManager.shared
+        let note = store.notes[idx]
+        let home = screen(for: note)
+        if grid.fits(col: note.gridCol, row: note.gridRow, cardWidth: width, cardHeight: height, screen: home) { return }
+        
+        let homeKey = home?.displayUUID ?? ""
+        let others = store.notes.filter { $0.id != noteId }
+        var slot: (col: Int, row: Int)?
+        var target = home
+        slot = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: grid.notes(others, onScreen: homeKey), screen: home)
+        if slot == nil {
+            for other in NSScreen.screens where (other.displayUUID ?? "") != homeKey {
+                if let f = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: grid.notes(others, onScreen: other.displayUUID), screen: other) {
+                    slot = f
+                    target = other
+                    break
+                }
+            }
+        }
+        let final = slot ?? grid.lastFittingSlot(cardWidth: width, cardHeight: height, screen: home)
+        if slot == nil { target = home }
+        store.notes[idx].gridCol = final.col
+        store.notes[idx].gridRow = final.row
+        if let t = target, t.displayUUID != home?.displayUUID { store.notes[idx].screenID = t.displayUUID }
+        displaySlotOverrides.removeValue(forKey: noteId)
+        let origin = grid.cardOrigin(forCol: final.col, row: final.row, cardHeight: CGFloat(height), screen: target)
+        store.notes[idx].positionX = origin.x
+        store.notes[idx].positionY = origin.y
+        let po = grid.panelOrigin(forCardOrigin: origin, cardHeight: CGFloat(height), panelHeight: panel.frame.height)
+        panel.setFrameOrigin(po)
     }
     
     // MARK: - Dragging & Live Displacement Swapping
@@ -227,7 +282,7 @@ public final class WidgetWindowManager: NSObject {
         let grid = GridSnapManager.shared
         let targetScreen = grid.targetScreen(mouse: NSEvent.mouseLocation, panelFrame: panel.frame)
         let targetScreenID = targetScreen?.displayUUID
-        let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen)
+        let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: grid.colSpan(for: note.width), rowSpan: grid.rowSpan(for: note.height))
         let targetSlotOrigin = grid.cardOrigin(forCol: targetCol, row: targetRow, cardHeight: cardH, screen: targetScreen)
         grid.showGuide(at: targetSlotOrigin, width: cardW, height: cardH)
         
@@ -244,7 +299,8 @@ public final class WidgetWindowManager: NSObject {
                 targetCol: targetCol,
                 targetRow: targetRow,
                 allNotes: [note] + targetNotes,
-                currentSlots: dragStartSlots
+                currentSlots: dragStartSlots,
+                screen: targetScreen
             )
             
             self.activePreviewSlots = newSlots
@@ -277,7 +333,7 @@ public final class WidgetWindowManager: NSObject {
             let grid = GridSnapManager.shared
             let targetScreen = grid.targetScreen(mouse: NSEvent.mouseLocation, panelFrame: panel.frame)
             let targetScreenID = targetScreen?.displayUUID
-            let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen)
+            let (targetCol, targetRow) = grid.gridSlot(forPanelFrame: panel.frame, screen: targetScreen, colSpan: grid.colSpan(for: note.width), rowSpan: grid.rowSpan(for: note.height))
             
             let targetNotes = grid.notes(store.notes, onScreen: targetScreenID).filter { $0.id != noteId }
             let finalSlots = grid.solveNonOverlappingSlots(
@@ -285,7 +341,8 @@ public final class WidgetWindowManager: NSObject {
                 targetCol: targetCol,
                 targetRow: targetRow,
                 allNotes: [note] + targetNotes,
-                currentSlots: dragStartSlots
+                currentSlots: dragStartSlots,
+                screen: targetScreen
             )
             
             // 1. Animate the dragged panel directly into its snapped slot
@@ -336,9 +393,9 @@ public final class WidgetWindowManager: NSObject {
         let screenID = screen?.displayUUID
         let sameScreenNotes = grid.notes(store.notes, onScreen: screenID)
         
-        var slot = grid.findNextAvailableSlot(cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes)
+        var slot = grid.findNextAvailableSlot(cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen)
         if let candidate = preferredCandidate?(screen),
-           grid.isSlotFree(col: candidate.col, row: candidate.row, cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes) {
+           grid.isSlotFree(col: candidate.col, row: candidate.row, cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) {
             slot = candidate
         }
         
