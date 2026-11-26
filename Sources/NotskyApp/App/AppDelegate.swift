@@ -149,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             title: "Notsky AI",
             headerImagePath: w1,
             items: [],
-            width: 360,
+            width: 586,
             height: 460
         )
         

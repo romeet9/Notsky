@@ -159,7 +159,10 @@ public final class NoteStore {
                 case .notes:
                     loadedNotes[i].width = 586
                     loadedNotes[i].height = 364
-                case .finder, .folders:
+                case .finder:
+                    loadedNotes[i].width = 586
+                    loadedNotes[i].height = 364
+                case .folders:
                     loadedNotes[i].width = 360
                     loadedNotes[i].height = 364
                 case .nowPlaying:
@@ -244,7 +247,7 @@ public final class NoteStore {
             chatMessages: [],
             gridCol: 2,
             gridRow: 0,
-            width: 360,
+            width: 586,
             height: 364
         )
         
@@ -361,7 +364,7 @@ public final class NoteStore {
             chatMessages: [],
             positionX: 120 + offset,
             positionY: 120 + offset,
-            width: 360,
+            width: 586,
             height: 364
         )
         notes.append(newCard)

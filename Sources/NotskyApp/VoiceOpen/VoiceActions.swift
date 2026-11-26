@@ -127,6 +127,7 @@ enum VoiceActions {
         var created = false
         if id == nil {
             id = manager.spawnNewWidget(title: String(localized: "Tasks"))
+            if id == nil { return Done(message: WidgetWindowManager.noRoomMessage, undo: nil) }
             created = true
         }
         guard let id, let idx = index(of: id) else { return Done(message: VoiceCommand.hint, undo: nil) }
@@ -148,7 +149,7 @@ enum VoiceActions {
 
     private static func newTaskGroup(name: String?, items: [String]) -> Done {
         let title = name ?? String(localized: "Tasks")
-        let id = manager.spawnNewWidget(title: title, items: items.map { NoteItem(text: $0) })
+        guard let id = manager.spawnNewWidget(title: title, items: items.map { NoteItem(text: $0) }) else { return Done(message: WidgetWindowManager.noRoomMessage, undo: nil) }
         touch(id)
         SensoryFeedback.taskAdded()
         return Done(message: String(localized: "Created task group “\(title)”")) {
@@ -162,7 +163,7 @@ enum VoiceActions {
         guard !text.isEmpty else { return Done(message: VoiceCommand.hint, undo: nil) }
         guard let id = cardId ?? defaultCard(.notes) else {
             let title = String(localized: "Notes")
-            let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: String(localized: "Untitled"), content: text)])
+            guard let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: String(localized: "Untitled"), content: text)]) else { return Done(message: WidgetWindowManager.noRoomMessage, undo: nil) }
             touch(id)
             return Done(message: String(localized: "Added to \(title)")) { manager.closeWidget(noteId: id) }
         }
@@ -194,7 +195,7 @@ enum VoiceActions {
 
     private static func newNote(name: String?) -> Done {
         let title = name ?? String(localized: "Notes")
-        let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: name ?? String(localized: "Untitled"), content: "")])
+        guard let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: name ?? String(localized: "Untitled"), content: "")]) else { return Done(message: WidgetWindowManager.noRoomMessage, undo: nil) }
         touch(id)
         return Done(message: String(localized: "Created note “\(title)”")) { manager.closeWidget(noteId: id) }
     }

@@ -469,20 +469,21 @@ final class NotskyAgent {
     private func createCard(_ args: [String: Any]) -> ToolOutput {
         let typeName = args.str("type") ?? ""
         let title = args.str("title")?.trimmed
-        let id: UUID
+        let spawned: UUID?
         switch typeName {
         case "tasks":
-            id = manager.spawnNewWidget(title: (title?.isEmpty == false ? title! : String(localized: "Tasks")), items: args.strArray("items").map { NoteItem(text: $0) })
+            spawned = manager.spawnNewWidget(title: (title?.isEmpty == false ? title! : String(localized: "Tasks")), items: args.strArray("items").map { NoteItem(text: $0) })
         case "notes":
             let name = (title?.isEmpty == false) ? title! : String(localized: "Notes")
-            id = manager.spawnNewFreeformNoteWidget(title: name, pages: [NotePage(title: title?.isEmpty == false ? title! : String(localized: "Untitled"), content: args.str("text") ?? "")])
-        case "nowPlaying": id = manager.spawnNewNowPlayingWidget()
-        case "linear": id = manager.spawnNewLinearWidget()
-        case "voice": id = manager.spawnNewVoiceOpenWidget()
-        case "chat": id = manager.spawnNewFinderWidget()
-        case "folders": id = manager.spawnNewFoldersWidget()
+            spawned = manager.spawnNewFreeformNoteWidget(title: name, pages: [NotePage(title: title?.isEmpty == false ? title! : String(localized: "Untitled"), content: args.str("text") ?? "")])
+        case "nowPlaying": spawned = manager.spawnNewNowPlayingWidget()
+        case "linear": spawned = manager.spawnNewLinearWidget()
+        case "voice": spawned = manager.spawnNewVoiceOpenWidget()
+        case "chat": spawned = manager.spawnNewFinderWidget()
+        case "folders": spawned = manager.spawnNewFoldersWidget()
         default: return ToolOutput(result: ["error": "type must be one of tasks, notes, nowPlaying, linear, voice, chat, folders"])
         }
+        guard let id = spawned else { return ToolOutput(result: ["error": WidgetWindowManager.noRoomMessage]) }
         if let title, !title.isEmpty, let i = index(of: id) { store.notes[i].title = title }
         let shown = index(of: id).map { displayTitle(store.notes[$0]) } ?? typeName
         return done(["status": "created", "card_id": shortID(id), "title": shown], label: String(localized: "Created card “\(shown)”")) { [weak self] in
@@ -500,7 +501,7 @@ final class NotskyAgent {
         } else if let found = defaultCard(.tasks) {
             idx = found
         } else {
-            let id = manager.spawnNewWidget(title: String(localized: "Tasks"))
+            guard let id = manager.spawnNewWidget(title: String(localized: "Tasks")) else { return ToolOutput(result: ["error": WidgetWindowManager.noRoomMessage]) }
             createdID = id
             guard let i = index(of: id) else { return ToolOutput(result: ["error": "Could not create a tasks card."]) }
             idx = i
@@ -521,7 +522,7 @@ final class NotskyAgent {
         guard let text = args.str("text")?.trimmed, !text.isEmpty else { return ToolOutput(result: ["error": "text is required"]) }
         if args.str("card_id")?.isEmpty != false, defaultCard(.notes) == nil {
             let title = String(localized: "Notes")
-            let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: String(localized: "Untitled"), content: text)])
+            guard let id = manager.spawnNewFreeformNoteWidget(title: title, pages: [NotePage(title: String(localized: "Untitled"), content: text)]) else { return ToolOutput(result: ["error": WidgetWindowManager.noRoomMessage]) }
             return done(["status": "created", "card_id": shortID(id)], label: String(localized: "Added to \(title)")) { [weak self] in
                 self?.manager.closeWidget(noteId: id)
             }

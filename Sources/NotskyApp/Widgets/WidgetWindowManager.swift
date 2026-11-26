@@ -380,35 +380,51 @@ public final class WidgetWindowManager: NSObject {
         }
     }
     
-    /// Picks the first free slot on the screen under the mouse, creates the card there and opens its window.
+    /// Tries the screen under the mouse, then every other screen. Returns nil (and creates nothing) if no screen has a free slot.
     @discardableResult
     private func placeAndOpen(
         width: Double,
         height: Double,
         preferredCandidate: ((NSScreen?) -> (col: Int, row: Int)?)? = nil,
         make: (_ id: UUID, _ slot: (col: Int, row: Int), _ origin: CGPoint, _ screenID: String?) -> NoteCard
-    ) -> UUID {
+    ) -> UUID? {
         let grid = GridSnapManager.shared
-        let screen = grid.screenUnderMouse()
-        let screenID = screen?.displayUUID
-        let sameScreenNotes = grid.notes(store.notes, onScreen: screenID)
+        var screens: [NSScreen?] = []
+        let mouse = grid.screenUnderMouse()
+        if let mouse { screens.append(mouse) }
+        for s in NSScreen.screens where s != mouse { screens.append(s) }
+        if screens.isEmpty { screens.append(nil) }
         
-        var slot = grid.findNextAvailableSlot(cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen)
-        if let candidate = preferredCandidate?(screen),
-           grid.isSlotFree(col: candidate.col, row: candidate.row, cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) {
-            slot = candidate
+        for screen in screens {
+            let screenID = screen?.displayUUID
+            let sameScreenNotes = grid.notes(store.notes, onScreen: screenID)
+            guard var slot = grid.findFreeSlot(cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) else { continue }
+            if let candidate = preferredCandidate?(screen),
+               grid.isSlotFree(col: candidate.col, row: candidate.row, cardWidth: width, cardHeight: height, existingNotes: sameScreenNotes, screen: screen) {
+                slot = candidate
+            }
+            let id = UUID()
+            let origin = grid.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(height), screen: screen)
+            let note = make(id, slot, origin, screenID)
+            store.notes.append(note)
+            openWidgetWindow(for: id, at: origin)
+            return id
         }
-        
-        let id = UUID()
-        let origin = grid.cardOrigin(forCol: slot.col, row: slot.row, cardHeight: CGFloat(height), screen: screen)
-        let note = make(id, slot, origin, screenID)
-        store.notes.append(note)
-        openWidgetWindow(for: id, at: origin)
-        return id
+        return nil
+    }
+    
+    public static let noRoomMessage = "No room on the desktop — remove a card first."
+    
+    public func showNoRoomAlert() {
+        let alert = NSAlert()
+        alert.messageText = "No room on your displays"
+        alert.informativeText = "Remove or move a card to make space, then try again."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
     
     @discardableResult
-    public func spawnNewWidget(near origin: CGPoint? = nil, title: String = "New Group", items: [NoteItem] = []) -> UUID {
+    public func spawnNewWidget(near origin: CGPoint? = nil, title: String = "New Group", items: [NoteItem] = []) -> UUID? {
         let targetWidth: Double = 281
         let targetHeight: Double = 364
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -442,7 +458,7 @@ public final class WidgetWindowManager: NSObject {
     
     /// Pass `pages` to start with a specific title and content instead of the sample note.
     @discardableResult
-    public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil, title: String? = nil, pages: [NotePage]? = nil) -> UUID {
+    public func spawnNewFreeformNoteWidget(near origin: CGPoint? = nil, title: String? = nil, pages: [NotePage]? = nil) -> UUID? {
         let cardWidth: Double = 586.0
         let targetHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -469,8 +485,8 @@ public final class WidgetWindowManager: NSObject {
     }
     
     @discardableResult
-    public func spawnNewFinderWidget(near origin: CGPoint? = nil) -> UUID {
-        let cardWidth: Double = 360.0
+    public func spawnNewFinderWidget(near origin: CGPoint? = nil) -> UUID? {
+        let cardWidth: Double = 586.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
         
@@ -494,7 +510,7 @@ public final class WidgetWindowManager: NSObject {
     }
     
     @discardableResult
-    public func spawnNewFoldersWidget(near origin: CGPoint? = nil) -> UUID {
+    public func spawnNewFoldersWidget(near origin: CGPoint? = nil) -> UUID? {
         let cardWidth: Double = 360.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -520,7 +536,7 @@ public final class WidgetWindowManager: NSObject {
     }
     
     @discardableResult
-    public func spawnNewNowPlayingWidget(near origin: CGPoint? = nil) -> UUID {
+    public func spawnNewNowPlayingWidget(near origin: CGPoint? = nil) -> UUID? {
         let cardWidth: Double = 281.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -546,7 +562,7 @@ public final class WidgetWindowManager: NSObject {
     }
     
     @discardableResult
-    public func spawnNewLinearWidget(near origin: CGPoint? = nil) -> UUID {
+    public func spawnNewLinearWidget(near origin: CGPoint? = nil) -> UUID? {
         let cardWidth: Double = 586.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -572,7 +588,7 @@ public final class WidgetWindowManager: NSObject {
     }
     
     @discardableResult
-    public func spawnNewVoiceOpenWidget(near origin: CGPoint? = nil) -> UUID {
+    public func spawnNewVoiceOpenWidget(near origin: CGPoint? = nil) -> UUID? {
         let cardWidth: Double = 281.0
         let cardHeight: Double = 364.0
         let nextWallpaper = WallpaperPackManager.shared.nextWallpaperPath()
@@ -760,7 +776,7 @@ public final class WidgetWindowManager: NSObject {
             chatMessages: [],
             gridCol: 2,
             gridRow: 0,
-            width: 360,
+            width: 586,
             height: 364
         )
         

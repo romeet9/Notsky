@@ -50,7 +50,7 @@ public final class GlobalHotKeyManager {
                     if hotKeyID.id == 1 { // Option + Cmd + D
                         DrawerWindowManager.shared.toggleDrawer()
                     } else if hotKeyID.id == 2 { // Option + Cmd + N
-                        WidgetWindowManager.shared.spawnNewFreeformNoteWidget()
+                        if WidgetWindowManager.shared.spawnNewFreeformNoteWidget() == nil { WidgetWindowManager.shared.showNoRoomAlert() }
                     }
                 }
             }

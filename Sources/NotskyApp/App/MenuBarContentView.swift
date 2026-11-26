@@ -6,37 +6,37 @@ struct MenuBarContentView: View {
 
     var body: some View {
         Button("New Task Group Card") {
-            manager.spawnNewWidget()
+            if manager.spawnNewWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("n", modifiers: [.command])
 
         Button("New Freeform Note Card") {
-            manager.spawnNewFreeformNoteWidget()
+            if manager.spawnNewFreeformNoteWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("n", modifiers: [.command, .option])
 
         Button("New Folders Card") {
-            manager.spawnNewFoldersWidget()
+            if manager.spawnNewFoldersWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("f", modifiers: [.command, .option])
 
         Button("New Now Playing Card") {
-            manager.spawnNewNowPlayingWidget()
+            if manager.spawnNewNowPlayingWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("m", modifiers: [.command, .option])
 
         Button("New Linear Card") {
-            manager.spawnNewLinearWidget()
+            if manager.spawnNewLinearWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("l", modifiers: [.command, .option])
 
         Button("New Notsky AI Card") {
-            manager.spawnNewFinderWidget()
+            if manager.spawnNewFinderWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("a", modifiers: [.command, .option])
 
         Button("New Voice Card") {
-            manager.spawnNewVoiceOpenWidget()
+            if manager.spawnNewVoiceOpenWidget() == nil { manager.showNoRoomAlert() }
         }
         .keyboardShortcut("v", modifiers: [.command, .option])
 
