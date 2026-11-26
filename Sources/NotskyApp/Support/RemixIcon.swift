@@ -24,6 +24,7 @@ enum RemixIcon: String {
     case checkLine = "\u{eb7b}"
     case bold = "\u{ead1}"
     case arrowUpCircleFill = "\u{ea71}"
+    case arrowUpLine = "\u{ea76}"
     case checkboxCircleFill = "\u{eb80}"
     case stickyNoteLine = "\u{f19b}"
     case closeLine = "\u{eb99}"

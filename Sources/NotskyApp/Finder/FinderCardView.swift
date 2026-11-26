@@ -15,7 +15,6 @@ public struct FinderCardView: View {
     @State private var isWorking: Bool = false
     @State private var isHoveringPlus: Bool = false
     @State private var isHoveringTools: Bool = false
-    @State private var isHoveringOpenFinder: Bool = false
     
     private var agent: NotskyAgent { NotskyAgent.shared }
     private var account: GroqAccount { GroqAccount.shared }
@@ -342,90 +341,68 @@ public struct FinderCardView: View {
         .padding(.top, startsTurn ? 7 : 0)
     }
     
-    // MARK: - Bottom Floating Bar with Input Bar & Open Finder Button
+    private func sendGlyphColor(_ enabled: Bool) -> Color {
+        if enabled { return isDark ? .black : .white }
+        return isDark ? Color.white.opacity(0.35) : Color.black.opacity(0.3)
+    }
+
+    private func sendFillColor(_ enabled: Bool) -> Color {
+        if enabled { return isDark ? .white : .black }
+        return isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+    }
+
+    private var composerFill: Color {
+        isDark ? Color(white: 0.16).opacity(0.88) : Color.white.opacity(0.88)
+    }
+
+    // MARK: - Bottom Floating Bar with the message composer
     private var bottomFloatingBar: some View {
-        HStack(spacing: 6) {
-            // macOS Spotlight Style Input Bar
-            HStack(spacing: 6) {
-                RemixImage(.aiMark, scaledSize: 15)
-                    .foregroundStyle(isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.5))
-                    .padding(.top, 9)
-                
-                TextField("Ask Notsky AI...", text: $inputText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...4)
-                    .scaledFont(size: 15, weight: .regular)
-                    .padding(.vertical, 7)
-                    .disabled(!isConnected)
-                    .accessibilityLabel("Message Notsky AI")
-                    .onSubmit { sendMessage() }
-                    .onKeyPress(.return, phases: .down) { press in
-                        if press.modifiers.contains(.shift) {
-                            inputText += "\n"
-                            return .handled
-                        }
-                        sendMessage()
+        let canSend = isConnected && !isWorking && !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return HStack(alignment: .bottom, spacing: 8) {
+            RemixImage(.aiMark, scaledSize: 15)
+                .foregroundStyle(sendGlyphColor(false).opacity(1.6))
+                .frame(height: 22)
+                .padding(.bottom, 9)
+
+            TextField("Ask Notsky AI…", text: $inputText, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineLimit(1...4)
+                .scaledFont(size: 15, weight: .regular)
+                .frame(minHeight: 22, alignment: .leading)
+                .padding(.vertical, 9)
+                .disabled(!isConnected)
+                .accessibilityLabel("Message Notsky AI")
+                .onSubmit { sendMessage() }
+                .onKeyPress(.return, phases: .down) { press in
+                    if press.modifiers.contains(.shift) {
+                        inputText += "\n"
                         return .handled
                     }
-                
-                if !inputText.isEmpty {
-                    Button(action: { sendMessage() }) {
-                        RemixImage(.arrowUpCircleFill, scaledSize: 20.5, accessibilityLabel: "Send")
-                            .foregroundStyle(isDark ? .white : .black)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 7)
-                    .disabled(isWorking)
+                    sendMessage()
+                    return .handled
                 }
-            }
-            .padding(.horizontal, 10)
-            .frame(minHeight: 36)
-            .background(
-                isDark ? Color(white: 0.16).opacity(0.88) : Color.white.opacity(0.88),
-                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-            )
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(specularBorderGradient, lineWidth: 0.75)
-            )
-            .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
-            
-            // "Open Finder" CTA Button (Height 36pt)
-            Button(action: {
-                SensoryFeedback.buttonClicked()
-                NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser)
-            }) {
-                if cardWidth < 340 {
-                    RemixImage(.folderFill, scaledSize: 14.5)
-                        .foregroundStyle(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
-                        .frame(width: 36, height: 36)
-                        .background(
-                            isDark ? Color(white: 0.18).opacity(isHoveringOpenFinder ? 0.95 : 0.88) : Color.white.opacity(isHoveringOpenFinder ? 0.95 : 0.88),
-                            in: Circle()
-                        )
-                        .background(.thinMaterial, in: Circle())
-                        .overlay { Circle().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
-                        .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
-                } else {
-                    Text("Open Finder")
-                        .scaledFont(size: 12.5, weight: .medium)
-                        .foregroundStyle(isDark ? .white.opacity(0.95) : .black.opacity(0.9))
-                        .padding(.horizontal, 12)
-                        .frame(height: 36)
-                        .background(
-                            isDark ? Color(white: 0.18).opacity(isHoveringOpenFinder ? 0.95 : 0.88) : Color.white.opacity(isHoveringOpenFinder ? 0.95 : 0.88),
-                            in: Capsule()
-                        )
-                        .background(.thinMaterial, in: Capsule())
-                        .overlay { Capsule().strokeBorder(specularBorderGradient, lineWidth: 0.75) }
-                        .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
-                }
+
+            Button(action: { sendMessage() }) {
+                RemixImage(.arrowUpLine, scaledSize: 14, accessibilityLabel: "Send")
+                    .foregroundStyle(sendGlyphColor(canSend))
+                    .frame(width: 28, height: 28)
+                    .background(sendFillColor(canSend), in: Circle())
             }
             .buttonStyle(.plain)
-            .onHover { isHoveringOpenFinder = $0 }
-            .help("Open macOS Finder")
+            .disabled(!canSend)
+            .padding(.bottom, 6)
+            .motionAnimation(.easeOut(duration: 0.15), value: canSend)
         }
+        .padding(.leading, 14)
+        .padding(.trailing, 6)
+        .frame(minHeight: 40)
+        .background(composerFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(specularBorderGradient, lineWidth: 0.75)
+        )
+        .shadow(color: Color.black.opacity(isDark ? 0.14 : 0.05), radius: 6, x: 0, y: 1.5)
         .padding(.horizontal, 12)
         .padding(.top, 20)
         .padding(.bottom, 12)
