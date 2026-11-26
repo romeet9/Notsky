@@ -75,7 +75,7 @@ public struct HeaderImageView: View {
             return
         }
         
-        if let cached = ImageDownsampler.shared.downsample(path: imagePath, targetMaxPixelSize: targetMaxPixelSize) {
+        if let cached = ImageDownsampler.shared.cachedImage(path: imagePath, targetMaxPixelSize: targetMaxPixelSize) {
             self.loadedImage = cached
             return
         }

@@ -4,6 +4,7 @@ import AppKit
 @MainActor
 public struct NoteCardView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isShelfCard) private var isShelfCard
     @Bindable private var settings = AppSettings.shared
     @Binding public var note: NoteCard
     public var onSpawnWidget: () -> Void
@@ -243,8 +244,7 @@ public struct NoteCardView: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(isDark ? Color.white.opacity(0.12) : Color.white.opacity(0.20), lineWidth: 0.75)
         )
-        .shadow(color: Color.black.opacity(isDark ? 0.08 : 0.04), radius: 6, x: 0, y: 2)
-        .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.03), radius: 12, x: 0, y: 4)
+        .modifier(CardDropShadow(isDark: isDark, enabled: !isShelfCard))
         .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .onHover { hovering in
             withMotion(.spring(response: 0.28, dampingFraction: 0.85)) {

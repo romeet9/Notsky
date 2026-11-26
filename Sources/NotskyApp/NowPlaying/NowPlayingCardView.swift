@@ -61,6 +61,8 @@ public struct NowPlayingCardView: View {
                         .aspectRatio(contentMode: .fill)
                         .blur(radius: 24)
                         .scaleEffect(1.3)
+                        // Flatten the blur into one cached texture so scrolling doesn't re-blur every frame.
+                        .drawingGroup()
                 } else {
                     HeaderImageView(imagePath: note.headerImagePath)
                 }

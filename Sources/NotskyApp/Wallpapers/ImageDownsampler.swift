@@ -13,6 +13,11 @@ public final class ImageDownsampler {
         cache.totalCostLimit = 48 * 1024 * 1024 // 48 MB maximum memory allocation
     }
     
+    /// Cache-only lookup: never touches the disk, safe to call from a view on the main thread.
+    public func cachedImage(path: String, targetMaxPixelSize: CGFloat = 800) -> NSImage? {
+        cache.object(forKey: "\(path)_\(Int(targetMaxPixelSize))" as NSString)
+    }
+
     /// Returns a downsampled NSImage for a given file path.
     /// targetMaxPixelSize: 800 for card headers / underlays, 200 for settings previews.
     public func downsample(path: String, targetMaxPixelSize: CGFloat = 800) -> NSImage? {

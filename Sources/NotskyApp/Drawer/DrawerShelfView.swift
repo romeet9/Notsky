@@ -1,6 +1,37 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Shelf environment
+
+private struct IsShelfCardKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True for card copies inside the scrolling shelf, which skip effects that are costly to scroll.
+    var isShelfCard: Bool {
+        get { self[IsShelfCardKey.self] }
+        set { self[IsShelfCardKey.self] = newValue }
+    }
+}
+
+/// The card's soft drop shadow. A shadow on a whole card renders the card offscreen every
+/// frame, so shelf copies (constant per view, never flips) skip it.
+struct CardDropShadow: ViewModifier {
+    let isDark: Bool
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .shadow(color: Color.black.opacity(isDark ? 0.08 : 0.04), radius: 6, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(isDark ? 0.06 : 0.03), radius: 12, x: 0, y: 4)
+        } else {
+            content
+        }
+    }
+}
+
 // MARK: - Drawer Shelf View
 
 @MainActor
@@ -104,8 +135,6 @@ public struct DrawerShelfView: View {
                         .opacity(drawerManager.isContentVisible ? 1.0 : 0.0)
                         .scaleEffect(drawerManager.isContentVisible || reduceMotion ? 1.0 : 0.93, anchor: .bottom)
                         .offset(y: drawerManager.isContentVisible || reduceMotion ? 0 : 50)
-                        .blur(radius: drawerManager.isContentVisible || reduceMotion ? 0 : 48)
-                        .brightness(drawerManager.isContentVisible || reduceMotion ? 0.0 : -0.32)
                         .motionAnimation(
                             .spring(response: 0.38, dampingFraction: 0.84, blendDuration: 0.15),
                             value: drawerManager.isContentVisible,
@@ -237,6 +266,7 @@ public struct DrawerShelfView: View {
                 }
             }
             .padding(.horizontal, horizontalPadding)
+            .environment(\.isShelfCard, true)
         }
         .scrollIndicators(.hidden)
     }
