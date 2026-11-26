@@ -17,7 +17,7 @@
 <br />
 
 <p align="center">
-  Notsky transforms your macOS desktop into a tactile spatial canvas. It combines liquid-glass materials, magnetic multi-display snapping, integrated Pomodoro timers, and a local AI assistant that finds and summarizes documents directly from your screen.
+  Notsky transforms your macOS desktop into a tactile spatial canvas. It combines liquid-glass cards on a responsive multi-display grid, task lists and notes, a Groq-powered AI assistant and voice orb that manage your cards for you, plus Now Playing and Linear widgets.
 </p>
 
 <br />
@@ -31,7 +31,15 @@ https://github.com/user-attachments/assets/ba538de9-7584-4238-95df-bcfaf9edf732
 
 ## What is Notsky?
 
-Notsky is an open-source native macOS desktop workspace application built entirely in Swift and SwiftUI. It replaces traditional static sticky notes with floating translucent cards featuring real-time wallpaper color sampling, multi-tab rich markdown editing, focus timers, and natural language local document search powered by `notskyai`.
+Notsky is an open-source native macOS desktop workspace application built entirely in Swift and SwiftUI. It replaces traditional static sticky notes with floating translucent cards featuring real-time wallpaper color sampling, multi-tab rich markdown editing, focus timers, an AI chat and voice assistant that can create and edit your cards, live music controls and your Linear issues.
+
+### What's new in v1.0.10
+- **Notsky AI**: a chat card powered by your own Groq API key. It finds files and folders, and creates, edits, pins and deletes cards, tasks and notes.
+- **Voice**: an Apple Intelligence-style orb card. Hold `⌥Space` to add tasks and notes, create task groups or control music.
+- **Now Playing**: a Control Center-style music card that also picks up browser audio, with HD album artwork.
+- **Linear**: your assigned issues in To Do / In Progress / Done tabs, editable from the card.
+- **Responsive grid**: cards stretch to fill each display and never overlap or run off-screen, with a separate grid on every monitor.
+- **Remix Icon** throughout the app, a redesigned AI chat input and smoother shelf scrolling.
 
 ---
 
@@ -42,14 +50,17 @@ Pre-compiled releases are available for macOS Sonoma (14.0+) and macOS Sequoia (
 <div align="center">
   <br />
   <a href="https://github.com/romeet9/Notsky/releases/latest">
-    <img src="https://img.shields.io/badge/Download-Notsky_v1.0.0_macOS-0071E3?style=for-the-badge&logo=apple&logoColor=white" height="40" alt="Download Notsky for macOS" />
+    <img src="https://img.shields.io/badge/Download-Notsky_v1.0.10_macOS-0071E3?style=for-the-badge&logo=apple&logoColor=white" height="40" alt="Download Notsky for macOS" />
   </a>
   <br /><br />
 </div>
 
-1. Download **`Notsky-v1.0.0-macOS.zip`** from the [Latest Release](https://github.com/romeet9/Notsky/releases/latest).
-2. Unzip and drag **`Notsky.app`** to your `/Applications` directory.
-3. Open **Notsky** via Spotlight (`⌘ Space`) or Launchpad.
+1. Download **`Notsky-Next-macOS.dmg`** from the [Latest Release](https://github.com/romeet9/Notsky/releases/latest).
+2. Open the DMG and drag **`Notsky Next.app`** to your `/Applications` directory.
+3. The app isn't notarized, so the first time, right-click it and choose **Open**.
+4. Allow microphone, speech recognition and automation access when macOS asks (used by Voice and Now Playing).
+
+**API keys:** Notsky AI uses your own free [Groq](https://console.groq.com/keys) key and the Linear card uses a Linear personal API key. Add them in **Settings → AI** and **Settings → Linear**. Keys are stored only in your macOS Keychain, never on disk or in this repository.
 
 ---
 
@@ -59,10 +70,19 @@ Pre-compiled releases are available for macOS Sonoma (14.0+) and macOS Sequoia (
 Built using Apple native `.ultraThinMaterial` with specular light borders. Notsky samples your desktop wallpaper in real time to balance text contrast and dynamically tint badges, checkboxes, and timers.
 
 ### Spatial Multi-Card Canvas
-Create task lists with spring-animated strike-throughs, multi-tab notes with bold and bullet formatting, and floating scratchpads. Cards snap to 24 pt magnetic gutters across multiple monitors.
+Create task lists with spring-animated strike-throughs, multi-tab notes with bold and bullet formatting, and folders. Every display gets its own responsive grid: cells stretch to fill the screen, cards grow into empty neighbouring space, and new cards never overlap. When a screen is full, Notsky tells you instead of stacking cards off-screen.
 
-### notskyai Intelligent Assistant
-A spotlight-style search interface that scans local files across your Mac. Query PDFs, spreadsheets, presentations, code, and images using natural phrases like *"find design assets from yesterday"* with instant file previews and AI summaries.
+### Notsky AI
+A conversational chat card (`⌥⌘A`) backed by Groq tool calling. Ask it to *"add milk to my groceries list"*, *"pin the design card"* or *"find my resume PDF"*. It searches files with Spotlight, opens or reveals them, and manages every card. Destructive actions ask first and can be undone for 10 seconds.
+
+### Voice
+An animated orb card (`⌥⌘V`). Hold `⌥Space` and speak. Speech is transcribed on-device, then handled by Notsky AI (or a built-in command parser when no key is set). Voice and chat share one conversation.
+
+### Now Playing
+A music card (`⌥⌘M`) showing Apple Music, Spotify and browser audio, with play/pause, skip, a seek bar and high-resolution artwork.
+
+### Linear
+Your assigned Linear issues (`⌥⌘L`) in To Do / In Progress / Done tabs. Change status from the status circle, and priority, due date and more from the right-click menu.
 
 ### Slide-Up Notes Shelf
 Press `⌥⌘D` from anywhere to slide up a full-width frosted glass shelf directly over the macOS Dock. Review all active project cards in a single horizontal carousel without moving open app windows.
@@ -74,18 +94,27 @@ Mechanical synthetic audio clicks and macOS Taptic Engine haptics provide physic
 
 ## Architecture
 
-Notsky is built as a pure Swift Package Manager project with zero third-party dependencies:
+Notsky is a pure Swift Package Manager project. The only bundled third-party pieces are the [Remix Icon](https://remixicon.com) font (Apache-2.0) and [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter) (BSD-3) for system-wide Now Playing.
 
 ```
-NotskyApp/
-├── Package.swift                     # Swift Package Manager manifest
+Notsky/
+├── Package.swift
 ├── Sources/NotskyApp/
-│   ├── App.swift                     # MenuBarExtra and lifecycle entry point
-│   ├── Models/                       # AppSettings, NoteStore, WindowManager, Pomodoro
-│   ├── Services/                     # AIFinderService, MenuBarIconManager
-│   ├── Utils/                        # SensoryFeedback, NaturalDateParser, ImageDownsampler
-│   └── Views/                        # NoteCardView, FreeformNoteCardView, FinderCardView, DrawerShelfView
-└── Resources/                        # AppIcon.icns, Info.plist, MenuBarIcon template
+│   ├── App/          # Lifecycle, menu bar, hotkeys
+│   ├── Widgets/      # Desktop windows and the per-display responsive grid
+│   ├── Notes/        # Task cards, NoteStore, card model
+│   ├── Freeform/     # Multi-tab notes cards
+│   ├── Folders/      # Folder cards
+│   ├── AI/           # Groq client, Notsky agent and tools, file search
+│   ├── Finder/       # Notsky AI chat card
+│   ├── VoiceOpen/    # Voice orb card and speech
+│   ├── NowPlaying/   # Music card, media adapter, HD artwork
+│   ├── Linear/       # Linear GraphQL service and card
+│   ├── Drawer/       # Slide-up notes shelf
+│   ├── Settings/     # Settings window
+│   ├── Wallpapers/   # Wallpaper packs and image handling
+│   └── Support/      # Icons, motion, scaled fonts
+└── Resources/        # Info.plist, entitlements, icons, Remix Icon, MediaRemoteAdapter, en.lproj
 ```
 
 ---
@@ -94,7 +123,7 @@ NotskyApp/
 
 ### Prerequisites
 * macOS 14.0 or newer
-* Xcode 15.0+ or Swift 6.0+ toolchain
+* Xcode 16+ or the Swift 6 Command Line Tools
 
 ```bash
 # Clone the repository
@@ -102,16 +131,22 @@ git clone https://github.com/romeet9/Notsky.git
 cd Notsky
 
 # Compile release binary
+# (Command Line Tools only? point at the macOS 26 SDK: SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk)
 swift build -c release
 
-# Package and launch app
-mkdir -p /Applications/Notsky.app/Contents/{MacOS,Resources}
-cp .build/release/NotskyApp /Applications/Notsky.app/Contents/MacOS/Notsky
-cp Resources/AppIcon.icns /Applications/Notsky.app/Contents/Resources/
-cp Resources/MenuBarIcon*.png /Applications/Notsky.app/Contents/Resources/ || true
-cp Resources/Info.plist /Applications/Notsky.app/Contents/Info.plist
+# Package the app
+APP="/Applications/Notsky Next.app"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp .build/release/NotskyApp "$APP/Contents/MacOS/Notsky"
+cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp -R Resources/AppIcon.icns Resources/MenuBarIcon*.png Resources/Wallpapers \
+      Resources/en.lproj Resources/RemixIcon Resources/MediaRemoteAdapter "$APP/Contents/Resources/"
 
-open /Applications/Notsky.app
+# Sign (the entitlements enable Apple Events and the microphone)
+codesign --force --sign - "$APP/Contents/Resources/MediaRemoteAdapter/MediaRemoteAdapter.framework"
+codesign --force --sign - --options runtime --entitlements Resources/Notsky.entitlements "$APP"
+
+open "$APP"
 ```
 
 ---
